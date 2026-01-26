@@ -1,28 +1,107 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🚀 CoursUE - Udemy-like Learning Platform
 
-## Getting Started
+A **clean, scalable Next.js starter** for building online learning platforms. Built with TypeScript, Tailwind CSS, and following best practices for scalable frontend architecture.
+
+## ✨ Features
+
+- ✅ **Clean Architecture** - Well-organized folder structure
+- ✅ **Reusable Components** - Base & common component library
+- ✅ **Layout System** - Multiple layouts for different page types
+- ✅ **TypeScript** - Full type safety
+- ✅ **Tailwind CSS** - Utility-first styling with design tokens
+- ✅ **Mobile-First** - Responsive design out of the box
+- ✅ **No UI Library** - Full control over styling
+
+## 🚀 Getting Started
 
 First, run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📦 What's Included
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Components
+- **Base**: Button, Input, Badge, Avatar, Modal
+- **Common**: Header, Footer, Sidebar, CourseCard
+- **Layouts**: MainLayout, DashboardLayout, AuthLayout
 
-## Learn More
+### Pages
+- `/` - Landing page
+- `/login` - Authentication
+- `/register` - Sign up
+- `/dashboard` - User dashboard
 
-To learn more about Next.js, take a look at the following resources:
+### Design System
+- Tailwind config with design tokens
+- 8px spacing system
+- Purple brand theme (Udemy-inspired)
+- Typography scale
+
+## 📚 Documentation
+
+- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Full architecture guide & API reference
+- **[PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md)** - Detailed folder structure
+
+## 🎯 Quick Examples
+
+### Using Components
+```tsx
+import { Button, Input } from '@/components/base';
+import { MainLayout } from '@/components/layout';
+
+export default function Page() {
+  return (
+    <MainLayout>
+      <Input label="Email" type="email" />
+      <Button variant="primary">Submit</Button>
+    </MainLayout>
+  );
+}
+```
+
+### Adding a New Page
+1. Create file in `src/app/your-page/page.tsx`
+2. Choose a layout
+3. Import components
+
+## 🛠️ Tech Stack
+
+- **Framework**: Next.js 15 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **Icons**: SVG inline
+- **Fonts**: System font stack
+
+## 📁 Project Structure
+
+```
+src/
+├── app/                 # Next.js routes
+│   ├── (public)/       # Landing pages
+│   ├── (auth)/         # Login, register
+│   └── (dashboard)/    # User dashboard
+├── components/
+│   ├── base/           # UI primitives
+│   ├── common/         # Composite components
+│   └── layout/         # Page layouts
+└── lib/                # Utils & types
+```
+
+## 🚀 Next Steps
+
+1. **Add Authentication** - NextAuth.js
+2. **State Management** - Zustand or Redux
+3. **API Integration** - Axios or Fetch
+4. **Form Validation** - React Hook Form + Zod
+5. **More Components** - Dropdown, Tabs, Cards
+
+## 📝 Learn More
+
+To learn more about the technologies used:
 
 - [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
 - [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
