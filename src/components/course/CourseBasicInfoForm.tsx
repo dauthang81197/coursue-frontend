@@ -16,11 +16,15 @@ import type {
 interface CourseBasicInfoFormProps {
   onSuccess: (course: Course) => void;
   initialData?: Partial<Course>;
+  isEdit?: boolean;
+  courseId?: string;
 }
 
 export function CourseBasicInfoForm({
   onSuccess,
   initialData,
+  isEdit = false,
+  courseId,
 }: CourseBasicInfoFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,11 +46,13 @@ export function CourseBasicInfoForm({
     try {
       setLoading(true);
       setError(null);
-      const course = await courseApi.create(data);
+      const course = isEdit && courseId
+        ? await courseApi.update(courseId, data)
+        : await courseApi.create(data);
       onSuccess(course);
     } catch (err: unknown) {
       const errorMessage =
-        err instanceof Error ? err.message : "Failed to create course";
+        err instanceof Error ? err.message : `Failed to ${isEdit ? 'update' : 'create'} course`;
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -174,7 +180,9 @@ export function CourseBasicInfoForm({
 
       <div className="flex justify-end space-x-4 pt-6 border-t">
         <Button type="submit" disabled={loading}>
-          {loading ? "Creating..." : "Create Course & Continue"}
+          {loading
+            ? (isEdit ? "Updating..." : "Creating...")
+            : (isEdit ? "Update Course & Continue" : "Create Course & Continue")}
         </Button>
       </div>
     </form>

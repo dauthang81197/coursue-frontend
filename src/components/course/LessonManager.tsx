@@ -82,7 +82,7 @@ export function LessonManager({
     setParentLesson(null);
     loadLessons();
   };
-
+  console.log(sections, "sections---");
   return (
     <div className="space-y-6">
       <div>

@@ -30,7 +30,7 @@ export function SectionManager({ courseId, onNext }: SectionManagerProps) {
     try {
       setLoading(true);
       const data = await sectionApi.getByCourse(courseId);
-      setSections(data);
+      setSections(data?.sections || []);
     } catch (error) {
       console.error("Failed to load sections:", error);
     } finally {
