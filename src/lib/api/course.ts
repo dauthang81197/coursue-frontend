@@ -10,7 +10,7 @@ export const courseApi = {
 
   // Get single course
   getById: async (id: string): Promise<Course> => {
-    const response = await apiClient.get(`/courses/${id}`);
+    const response = await apiClient.get(`/admin/courses/${id}`);
     return response.data;
   },
 

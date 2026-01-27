@@ -7,7 +7,7 @@ import type {
 
 export const sectionApi = {
   // Get sections by course
-  getByCourse: async (courseId: string): Promise<Section[]> => {
+  getByCourse: async (courseId: string): Promise<{ sections: Section[] }> => {
     const response = await apiClient.get(`/courses/${courseId}/sections`);
     return response.data;
   },
