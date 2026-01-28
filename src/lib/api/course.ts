@@ -30,4 +30,34 @@ export const courseApi = {
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/admin/courses/${id}`);
   },
+
+  // Upload thumbnail
+  uploadThumbnail: async (
+    courseId: string,
+    file: File,
+    onProgress?: (progress: number) => void,
+  ): Promise<{ thumbnail: string; message: string }> => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await apiClient.post(
+      `/admin/courses/${courseId}/thumbnail`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total && onProgress) {
+            const percentCompleted = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total,
+            );
+            onProgress(percentCompleted);
+          }
+        },
+      },
+    );
+
+    return response.data;
+  },
 };
