@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
+import Link from "next/link";
 import { CourseCard } from "./CourseCard";
 import { useCourseStore } from "@/lib/store";
 
@@ -61,9 +62,12 @@ export const CourseList: React.FC<CourseListProps> = ({
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
           {showSeeAll && (
-            <button className="text-primary-600 hover:text-primary-700 font-medium">
+            <Link
+              href="/courses"
+              className="text-primary-600 hover:text-primary-700 font-medium"
+            >
               See All →
-            </button>
+            </Link>
           )}
         </div>
       )}
