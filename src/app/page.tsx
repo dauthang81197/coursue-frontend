@@ -7,7 +7,7 @@ export default function Home() {
   return (
     <MainLayout>
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-primary-600 to-primary-800 text-white">
+      <section className="bg-linear-to-r from-primary-600 to-primary-800 text-white">
         <div className="container-custom py-20">
           <div className="max-w-2xl">
             <div className="inline-block mb-4 px-3 py-1 bg-white/20 rounded-full text-sm">
@@ -17,11 +17,15 @@ export default function Home() {
               Sharpen Your Skills With Professional Online Courses
             </h1>
             <p className="text-lg mb-8 text-primary-100">
-              Continue your journey and achieve your target with the world's
-              best instructors and learn at your own pace.
+              Continue your journey and achieve your target with the
+              world&apos;s best instructors and learn at your own pace.
             </p>
             <Link href="/courses">
-              <Button variant="primary" size="lg" className="bg-white text-primary-600 hover:bg-gray-100">
+              <Button
+                variant="primary"
+                size="lg"
+                className="bg-white text-primary-600 hover:bg-gray-100"
+              >
                 Join Now
               </Button>
             </Link>
@@ -53,7 +57,7 @@ export default function Home() {
                   <div className="text-3xl mb-2">💻</div>
                   <h3 className="font-semibold text-gray-900">{category}</h3>
                 </Link>
-              )
+              ),
             )}
           </div>
         </div>
@@ -93,4 +97,3 @@ export default function Home() {
     </MainLayout>
   );
 }
-

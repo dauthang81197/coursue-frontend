@@ -165,3 +165,27 @@ export interface VideoUploadResponse {
 export interface VideoUrlResponse {
   url: string;
 }
+
+// Progress Types
+export interface LessonProgress {
+  lessonId: string;
+  completed: boolean;
+  completedAt?: string;
+}
+
+export interface SectionProgress {
+  sectionId: string;
+  lessons: LessonProgress[];
+  completedLessons: number;
+  totalLessons: number;
+  progress: number;
+}
+
+export interface CourseProgress {
+  courseId: string;
+  sections: SectionProgress[];
+  completedLessons: number;
+  totalLessons: number;
+  progress: number;
+  lastAccessedLessonId?: string;
+}

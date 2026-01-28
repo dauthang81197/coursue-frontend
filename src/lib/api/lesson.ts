@@ -8,6 +8,22 @@ import type {
 } from "../types/course";
 
 export const lessonApi = {
+  // Get lesson detail (for learning)
+  getById: async (lessonId: string): Promise<Lesson> => {
+    const response = await apiClient.get(`/lessons/${lessonId}`);
+    return response.data;
+  },
+
+  // Mark lesson as completed
+  markComplete: async (lessonId: string): Promise<void> => {
+    await apiClient.post(`/lessons/${lessonId}/complete`);
+  },
+
+  // Mark lesson as uncompleted
+  markUncomplete: async (lessonId: string): Promise<void> => {
+    await apiClient.post(`/lessons/${lessonId}/uncomplete`);
+  },
+
   // Get lesson tree for section
   getTree: async (sectionId: string): Promise<Lesson[]> => {
     const response = await apiClient.get(
