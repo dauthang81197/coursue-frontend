@@ -10,6 +10,7 @@ interface CourseReviewProps {
 }
 
 export function CourseReview({ course, onFinish, onBack }: CourseReviewProps) {
+  console.log(course, "course");
   return (
     <div className="space-y-6">
       <div>
@@ -83,20 +84,19 @@ export function CourseReview({ course, onFinish, onBack }: CourseReviewProps) {
         <div className="grid grid-cols-3 gap-4 pt-4 border-t">
           <div className="text-center">
             <div className="text-2xl font-bold text-gray-900">
-              {course.sectionCount || 0}
+              {course?.sections?.length || 0}
             </div>
             <div className="text-sm text-gray-500">Sections</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-gray-900">
-              {course.lessonCount || 0}
+              {course.totalLessons || 0}
             </div>
             <div className="text-sm text-gray-500">Lessons</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-gray-900">
-              {course.totalDuration ? Math.floor(course.totalDuration / 60) : 0}
-              h
+              {course.totalDuration || 0}h
             </div>
             <div className="text-sm text-gray-500">Duration</div>
           </div>

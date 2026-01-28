@@ -29,10 +29,12 @@ export interface Course {
   rating: number;
   reviewCount: number;
   totalDuration: number;
+  totalLessons: number;
   sectionCount: number;
   lessonCount: number;
   createdAt: string;
   updatedAt: string;
+  sections: Section[];
 }
 
 export interface CreateCourseDto {
