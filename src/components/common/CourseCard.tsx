@@ -18,7 +18,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
         ((course.originalPrice - course.price) / course.originalPrice) * 100,
       )
     : 0;
-
+  console.log(course, "àdslkjf");
   return (
     <Link
       href={`/courses/${course.id}`}

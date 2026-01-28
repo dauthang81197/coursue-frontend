@@ -6,6 +6,7 @@ import { courseApi } from "@/lib/api/course";
 import { Button } from "@/components/base/Button";
 import { Input } from "@/components/base/Input";
 import { Textarea } from "@/components/base/Textarea";
+import { ThumbnailUpload } from "./ThumbnailUpload";
 import type {
   CreateCourseDto,
   Course,
@@ -28,6 +29,9 @@ export function CourseBasicInfoForm({
 }: CourseBasicInfoFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | undefined>(
+    initialData?.thumbnail,
+  );
 
   const {
     register,
@@ -46,13 +50,23 @@ export function CourseBasicInfoForm({
     try {
       setLoading(true);
       setError(null);
-      const course = isEdit && courseId
-        ? await courseApi.update(courseId, data)
-        : await courseApi.create(data);
+
+      // Include thumbnail URL in the course data
+      const courseData = {
+        ...data,
+        thumbnail: thumbnailUrl,
+      };
+
+      const course =
+        isEdit && courseId
+          ? await courseApi.update(courseId, courseData)
+          : await courseApi.create(courseData);
       onSuccess(course);
     } catch (err: unknown) {
       const errorMessage =
-        err instanceof Error ? err.message : `Failed to ${isEdit ? 'update' : 'create'} course`;
+        err instanceof Error
+          ? err.message
+          : `Failed to ${isEdit ? "update" : "create"} course`;
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -91,6 +105,14 @@ export function CourseBasicInfoForm({
         error={errors.description?.message}
         placeholder="Describe what students will learn..."
         rows={5}
+      />
+
+      {/* Thumbnail Upload */}
+      <ThumbnailUpload
+        courseId={courseId}
+        currentThumbnail={initialData?.thumbnail}
+        onUploadSuccess={(url) => setThumbnailUrl(url)}
+        disabled={loading}
       />
 
       <div className="grid grid-cols-2 gap-6">
@@ -181,8 +203,12 @@ export function CourseBasicInfoForm({
       <div className="flex justify-end space-x-4 pt-6 border-t">
         <Button type="submit" disabled={loading}>
           {loading
-            ? (isEdit ? "Updating..." : "Creating...")
-            : (isEdit ? "Update Course & Continue" : "Create Course & Continue")}
+            ? isEdit
+              ? "Updating..."
+              : "Creating..."
+            : isEdit
+              ? "Update Course & Continue"
+              : "Create Course & Continue"}
         </Button>
       </div>
     </form>
