@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { lessonApi } from "@/lib/api/lesson";
 import { Button } from "@/components/base/Button";
 import { LessonNode } from "./LessonNode";
@@ -15,7 +15,6 @@ interface LessonManagerProps {
 }
 
 export function LessonManager({
-  courseId,
   sections,
   onNext,
   onBack,
@@ -27,25 +26,25 @@ export function LessonManager({
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [parentLesson, setParentLesson] = useState<Lesson | null>(null);
 
-  useEffect(() => {
-    if (selectedSection) {
-      loadLessons();
-    }
-  }, [selectedSection]);
-
-  const loadLessons = async () => {
+  const loadLessons = useCallback(async () => {
     if (!selectedSection) return;
 
     try {
       setLoading(true);
       const tree = await lessonApi.getTree(selectedSection);
       setLessons(tree);
-    } catch (error) {
-      console.error("Failed to load lessons:", error);
+    } catch {
+      console.error("Failed to load lessons");
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedSection]);
+
+  useEffect(() => {
+    if (selectedSection) {
+      loadLessons();
+    }
+  }, [selectedSection, loadLessons]);
 
   const handleAddLesson = (parent?: Lesson) => {
     setParentLesson(parent || null);
@@ -71,7 +70,7 @@ export function LessonManager({
     try {
       await lessonApi.delete(lessonId);
       await loadLessons();
-    } catch (error) {
+    } catch {
       alert("Failed to delete lesson");
     }
   };

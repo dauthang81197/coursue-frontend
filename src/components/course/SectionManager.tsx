@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { sectionApi } from "@/lib/api/section";
 import { Button } from "@/components/base/Button";
 import { Input } from "@/components/base/Input";
@@ -15,28 +15,27 @@ interface SectionManagerProps {
 export function SectionManager({ courseId, onNext }: SectionManagerProps) {
   const [sections, setSections] = useState<Section[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [newSection, setNewSection] = useState<Partial<CreateSectionDto>>({
     title: "",
     description: "",
     courseId,
   });
 
-  useEffect(() => {
-    loadSections();
-  }, [courseId]);
-
-  const loadSections = async () => {
+  const loadSections = useCallback(async () => {
     try {
       setLoading(true);
       const data = await sectionApi.getByCourse(courseId);
       setSections(data?.sections || []);
-    } catch (error) {
-      console.error("Failed to load sections:", error);
+    } catch {
+      console.error("Failed to load sections");
     } finally {
       setLoading(false);
     }
-  };
+  }, [courseId]);
+
+  useEffect(() => {
+    loadSections();
+  }, [loadSections]);
 
   const handleAddSection = async () => {
     if (!newSection.title) return;
@@ -52,7 +51,7 @@ export function SectionManager({ courseId, onNext }: SectionManagerProps) {
       await sectionApi.create(sectionData);
       setNewSection({ title: "", description: "", courseId });
       await loadSections();
-    } catch (error) {
+    } catch {
       alert("Failed to create section");
     }
   };
@@ -67,7 +66,7 @@ export function SectionManager({ courseId, onNext }: SectionManagerProps) {
     try {
       await sectionApi.delete(sectionId);
       await loadSections();
-    } catch (error) {
+    } catch {
       alert("Failed to delete section");
     }
   };
@@ -125,7 +124,7 @@ export function SectionManager({ courseId, onNext }: SectionManagerProps) {
 
               <div className="flex items-center space-x-2 ml-4">
                 <button
-                  onClick={() => setEditingId(section.id)}
+                  onClick={() => console.log("Edit section", section.id)}
                   className="p-2 text-gray-600 hover:bg-gray-100 rounded transition-colors"
                   title="Edit section"
                 >

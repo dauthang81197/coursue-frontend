@@ -12,22 +12,24 @@ export default function AdminCoursesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadCourses();
-  }, []);
-
   const loadCourses = async () => {
     try {
       setLoading(true);
       const data = await courseApi.getAll();
       console.log("Loaded courses:", data);
-      setCourses(data.data);
-    } catch (err: any) {
-      setError(err.message || "Failed to load courses");
+      setCourses(data);
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to load courses";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadCourses();
+  }, []);
 
   const handleDelete = async (courseId: string) => {
     if (!confirm("Are you sure you want to delete this course?")) return;
@@ -35,8 +37,10 @@ export default function AdminCoursesPage() {
     try {
       await courseApi.delete(courseId);
       setCourses((prev) => prev.filter((c) => c.id !== courseId));
-    } catch (err: any) {
-      alert(err.message || "Failed to delete course");
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to delete course";
+      alert(errorMessage);
     }
   };
 

@@ -51,9 +51,12 @@ export const useCourseStore = create<CourseState>((set, get) => ({
         limit: response.limit,
         isLoading: false,
       });
-    } catch (error: any) {
+    } catch (error) {
       const message =
-        error.response?.data?.message || "Failed to fetch courses";
+        error instanceof Error && "response" in error
+          ? (error as { response?: { data?: { message?: string } } }).response
+              ?.data?.message || "Failed to fetch courses"
+          : "Failed to fetch courses";
       set({ error: message, isLoading: false });
     }
   },
@@ -69,8 +72,12 @@ export const useCourseStore = create<CourseState>((set, get) => ({
         currentCourse: course,
         isLoading: false,
       });
-    } catch (error: any) {
-      const message = error.response?.data?.message || "Failed to fetch course";
+    } catch (error) {
+      const message =
+        error instanceof Error && "response" in error
+          ? (error as { response?: { data?: { message?: string } } }).response
+              ?.data?.message || "Failed to fetch course"
+          : "Failed to fetch course";
       set({ error: message, isLoading: false, currentCourse: null });
     }
   },
@@ -86,9 +93,12 @@ export const useCourseStore = create<CourseState>((set, get) => ({
         enrolledCourses: courses,
         isLoading: false,
       });
-    } catch (error: any) {
+    } catch (error) {
       const message =
-        error.response?.data?.message || "Failed to fetch enrolled courses";
+        error instanceof Error && "response" in error
+          ? (error as { response?: { data?: { message?: string } } }).response
+              ?.data?.message || "Failed to fetch enrolled courses"
+          : "Failed to fetch enrolled courses";
       set({ error: message, isLoading: false });
     }
   },
@@ -104,9 +114,12 @@ export const useCourseStore = create<CourseState>((set, get) => ({
       await get().fetchEnrolledCourses();
 
       set({ isLoading: false });
-    } catch (error: any) {
+    } catch (error) {
       const message =
-        error.response?.data?.message || "Failed to enroll in course";
+        error instanceof Error && "response" in error
+          ? (error as { response?: { data?: { message?: string } } }).response
+              ?.data?.message || "Failed to enroll in course"
+          : "Failed to enroll in course";
       set({ error: message, isLoading: false });
       throw error;
     }
