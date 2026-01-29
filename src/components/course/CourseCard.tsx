@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import type { Course } from "@/lib/types/course";
 
 interface CourseCardProps {
@@ -23,10 +24,11 @@ export function CourseCard({ course, onDelete, isAdmin }: CourseCardProps) {
       {/* Thumbnail */}
       <div className="aspect-video bg-gray-200 relative">
         {course.thumbnail ? (
-          <img
+          <Image
             src={course.thumbnail}
             alt={course.title}
-            className="w-full h-full object-cover"
+            fill
+            className="object-cover"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-400">
@@ -47,12 +49,13 @@ export function CourseCard({ course, onDelete, isAdmin }: CourseCardProps) {
         )}
         <div className="absolute top-2 right-2">
           <span
-            className={`px-2 py-1 text-xs font-medium rounded ${course.status === "published"
-              ? "bg-green-100 text-green-800"
-              : course.status === "draft"
-                ? "bg-yellow-100 text-yellow-800"
-                : "bg-gray-100 text-gray-800"
-              }`}
+            className={`px-2 py-1 text-xs font-medium rounded ${
+              course.status === "published"
+                ? "bg-green-100 text-green-800"
+                : course.status === "draft"
+                  ? "bg-yellow-100 text-yellow-800"
+                  : "bg-gray-100 text-gray-800"
+            }`}
           >
             {course.status}
           </span>

@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { sectionApi } from "@/lib/api/section";
 import { CourseBasicInfoForm } from "@/components/course/CourseBasicInfoForm";
 import { SectionManager } from "@/components/course/SectionManager";
 import { LessonManager } from "@/components/course/LessonManager";
 import { CourseReview } from "@/components/course/CourseReview";
-import type { CreateCourseDto, Course, Section } from "@/lib/types/course";
+import type { Course, Section } from "@/lib/types/course";
 
 const STEPS = [
   { id: 1, name: "Basic Info", description: "Course details" },
@@ -23,21 +23,22 @@ export default function NewCoursePage() {
   const [courseData, setCourseData] = useState<Partial<Course> | null>(null);
   const [sections, setSections] = useState<Section[]>([]);
 
-  useEffect(() => {
-    if (currentStep >= 2 && courseId) {
-      loadSections();
-    }
-  }, [currentStep, courseId]);
-
-  const loadSections = async () => {
+  const loadSections = useCallback(async () => {
     if (!courseId) return;
     try {
       const data = await sectionApi.getByCourse(courseId);
       setSections(data.sections || []);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Failed to load sections:", err);
     }
-  };
+  }, [courseId]);
+
+  useEffect(() => {
+    if (currentStep >= 2 && courseId) {
+      loadSections();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentStep, courseId]);
 
   const handleCourseCreated = (course: Course) => {
     setCourseId(course.id);
@@ -70,8 +71,9 @@ export default function NewCoursePage() {
             {STEPS.map((step, stepIdx) => (
               <li
                 key={step.name}
-                className={`relative ${stepIdx !== STEPS.length - 1 ? "pr-8 sm:pr-20 flex-1" : ""
-                  }`}
+                className={`relative ${
+                  stepIdx !== STEPS.length - 1 ? "pr-8 sm:pr-20 flex-1" : ""
+                }`}
               >
                 {stepIdx !== STEPS.length - 1 && (
                   <div
@@ -79,20 +81,22 @@ export default function NewCoursePage() {
                     aria-hidden="true"
                   >
                     <div
-                      className={`h-0.5 w-full ${step.id < currentStep ? "bg-blue-600" : "bg-gray-200"
-                        }`}
+                      className={`h-0.5 w-full ${
+                        step.id < currentStep ? "bg-blue-600" : "bg-gray-200"
+                      }`}
                     />
                   </div>
                 )}
 
                 <div className="relative flex items-center group">
                   <span
-                    className={`h-9 w-9 rounded-full flex items-center justify-center ${step.id === currentStep
+                    className={`h-9 w-9 rounded-full flex items-center justify-center ${
+                      step.id === currentStep
                         ? "bg-blue-600 text-white"
                         : step.id < currentStep
                           ? "bg-blue-600 text-white"
                           : "bg-white border-2 border-gray-300 text-gray-500"
-                      }`}
+                    }`}
                   >
                     {step.id < currentStep ? (
                       <svg
@@ -112,12 +116,13 @@ export default function NewCoursePage() {
                   </span>
                   <span className="ml-3 min-w-0 flex flex-col">
                     <span
-                      className={`text-sm font-medium ${step.id === currentStep
+                      className={`text-sm font-medium ${
+                        step.id === currentStep
                           ? "text-blue-600"
                           : step.id < currentStep
                             ? "text-gray-900"
                             : "text-gray-500"
-                        }`}
+                      }`}
                     >
                       {step.name}
                     </span>
