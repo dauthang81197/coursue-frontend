@@ -1,6 +1,7 @@
 # Troubleshooting Unhealthy Container
 
 ## 🔍 Current Issue
+
 Container đang chạy nhưng status: **unhealthy**
 
 ```
@@ -28,6 +29,7 @@ docker logs --tail=100 coursue-frontend
 ```
 
 **Tìm errors như:**
+
 - `Module not found`
 - `Cannot find module`
 - `Port already in use`
@@ -40,6 +42,7 @@ docker logs --tail=100 coursue-frontend
 Health check đang gọi: `http://localhost:3000/api/health`
 
 **Test từ bên trong container:**
+
 ```bash
 # Execute command trong container
 docker exec coursue-frontend wget -O- http://localhost:3000/api/health
@@ -49,11 +52,13 @@ docker exec coursue-frontend curl http://localhost:3000/api/health
 ```
 
 **Test từ EC2 host:**
+
 ```bash
 curl http://localhost:3000/api/health
 ```
 
 **Test từ bên ngoài:**
+
 ```bash
 curl http://YOUR_EC2_IP:3000/api/health
 ```
@@ -83,6 +88,7 @@ docker inspect coursue-frontend | grep -A 20 Health
 ```
 
 Output sẽ show:
+
 - Health check command
 - Exit code
 - Output của health check
@@ -102,7 +108,7 @@ Output sẽ show:
 mkdir -p src/app/api/health
 cat > src/app/api/health/route.ts << 'EOF'
 export async function GET() {
-  return Response.json({ 
+  return Response.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
@@ -121,11 +127,13 @@ git push origin feat/cicd
 ### Issue 2: App Not Starting
 
 **Possible causes:**
+
 - Missing environment variables
 - Port conflict
 - Build errors
 
 **Check logs:**
+
 ```bash
 docker logs coursue-frontend 2>&1 | grep -i error
 ```
@@ -133,6 +141,7 @@ docker logs coursue-frontend 2>&1 | grep -i error
 **Common errors:**
 
 **a) Missing NEXT_PUBLIC_API_URL:**
+
 ```
 Error: NEXT_PUBLIC_API_URL is not defined
 ```
@@ -140,6 +149,7 @@ Error: NEXT_PUBLIC_API_URL is not defined
 **Fix:** Add to GitHub Secrets và redeploy
 
 **b) Port in use:**
+
 ```
 Error: listen EADDRINUSE: address already in use :::3000
 ```
@@ -155,13 +165,22 @@ Error: listen EADDRINUSE: address already in use :::3000
 **Solution:** Tăng timeout và start_period
 
 Update `docker-compose.yml`:
+
 ```yaml
 healthcheck:
-  test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+  test:
+    [
+      "CMD",
+      "wget",
+      "--quiet",
+      "--tries=1",
+      "--spider",
+      "http://localhost:3000/api/health",
+    ]
   interval: 30s
   timeout: 10s
   retries: 5
-  start_period: 60s  # Tăng từ 40s lên 60s
+  start_period: 60s # Tăng từ 40s lên 60s
 ```
 
 ---
@@ -173,12 +192,18 @@ healthcheck:
 **Solution:** Sử dụng alternative health check
 
 **Option 1: Use node/curl**
+
 ```yaml
 healthcheck:
-  test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3000/api/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1))\""]
+  test:
+    [
+      "CMD-SHELL",
+      'node -e "require(''http'').get(''http://localhost:3000/api/health'', (res) => process.exit(res.statusCode === 200 ? 0 : 1))"',
+    ]
 ```
 
 **Option 2: Install wget trong Dockerfile**
+
 ```dockerfile
 FROM node:20-alpine AS runner
 WORKDIR /app
