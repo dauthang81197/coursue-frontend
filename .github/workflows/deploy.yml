@@ -14,6 +14,7 @@ env:
   DOCKER_IMAGE: coursue-frontend
   EC2_HOST: ${{ secrets.EC2_HOST }}
   EC2_USER: ${{ secrets.EC2_USER }}
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
 
 jobs:
   build-and-deploy:
@@ -25,19 +26,17 @@ jobs:
 
       # -------- LINT CHECK --------
       - name: Install dependencies
-        run: |
-          npm ci
+        run: npm ci
 
       - name: Run lint
-        run: |
-          npm run lint
+        run: npm run lint
 
       # -------- BUILD IMAGE --------
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to Docker Hub (Optional)
-        if: ${{ secrets.DOCKER_USERNAME != '' }}
+        if: ${{ env.DOCKER_USERNAME != '' }}
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
@@ -45,29 +44,29 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t ${{ env.DOCKER_IMAGE }}:latest .
-          docker save ${{ env.DOCKER_IMAGE }}:latest | gzip > image.tar.gz
+          docker build -t $DOCKER_IMAGE:latest .
+          docker save $DOCKER_IMAGE:latest | gzip > image.tar.gz
 
       # -------- DEPLOY (CHỈ KHI PUSH) --------
       - name: Copy files to EC2
         if: ${{ github.event_name == 'push' }}
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
+          host: ${{ env.EC2_HOST }}
+          username: ${{ env.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           source: "image.tar.gz,docker-compose.yml,.env.production"
-          target: "/home/${{ secrets.EC2_USER }}/coursue-frontend"
+          target: "/home/${{ env.EC2_USER }}/coursue-frontend"
 
       - name: Deploy on EC2
         if: ${{ github.event_name == 'push' }}
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
+          host: ${{ env.EC2_HOST }}
+          username: ${{ env.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            cd /home/${{ secrets.EC2_USER }}/coursue-frontend
+            cd /home/${{ env.EC2_USER }}/coursue-frontend
 
             docker load < image.tar.gz
             rm image.tar.gz
@@ -82,12 +81,12 @@ jobs:
         if: ${{ github.event_name == 'push' }}
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
+          host: ${{ env.EC2_HOST }}
+          username: ${{ env.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             sleep 10
-            if docker compose -f /home/${{ secrets.EC2_USER }}/coursue-frontend/docker-compose.yml ps | grep -q "Up"; then
+            if docker compose -f /home/${{ env.EC2_USER }}/coursue-frontend/docker-compose.yml ps | grep -q "Up"; then
               echo "✅ Deployment successful!"
             else
               echo "❌ Deployment failed!"
