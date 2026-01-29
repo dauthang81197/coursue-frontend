@@ -25,17 +25,20 @@ Open [http://localhost:3000](http://localhost:3000) to see the result.
 ## 📦 What's Included
 
 ### Components
+
 - **Base**: Button, Input, Badge, Avatar, Modal
 - **Common**: Header, Footer, Sidebar, CourseCard
 - **Layouts**: MainLayout, DashboardLayout, AuthLayout
 
 ### Pages
+
 - `/` - Landing page
 - `/login` - Authentication
 - `/register` - Sign up
 - `/dashboard` - User dashboard
 
 ### Design System
+
 - Tailwind config with design tokens
 - 8px spacing system
 - Purple brand theme (Udemy-inspired)
@@ -43,15 +46,44 @@ Open [http://localhost:3000](http://localhost:3000) to see the result.
 
 ## 📚 Documentation
 
-- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Full architecture guide & API reference
-- **[PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md)** - Detailed folder structure
+Comprehensive documentation available in the [`docs/`](./docs) directory:
+
+### 🚀 Getting Started
+
+- **[Quick Start Guide](./docs/QUICK_START.md)** - Get up and running quickly
+
+### 🏗️ Architecture
+
+- **[Architecture](./docs/ARCHITECTURE.md)** - System architecture & design patterns
+- **[Project Structure](./docs/PROJECT_STRUCTURE.md)** - Folder structure & organization
+- **[Component Map](./docs/COMPONENT_MAP.md)** - Component hierarchy & usage
+
+### 🔌 API Integration
+
+- **[API Integration Guide](./docs/API_INTEGRATION_GUIDE.md)** - How to integrate with backend APIs
+- **[Enrollment Flow](./docs/ENROLL_FLOW_IMPLEMENTATION.md)** - Course enrollment implementation
+- **[Learning Flow](./docs/LEARNING_FLOW_IMPLEMENTATION.md)** - Learning experience implementation
+
+### 🚢 Deployment
+
+- **[Deployment Guide](./docs/DEPLOYMENT.md)** - Full CI/CD setup with Docker & EC2
+- **[GitHub Secrets](./docs/GITHUB_SECRETS.md)** - Setup secrets for GitHub Actions
+- **[SSH Troubleshooting](./docs/SSH_KEY_SETUP.md)** - Fix SSH authentication issues
+
+### 📝 Reference
+
+- **[Quick Reference](./docs/QUICK_REFERENCE.md)** - Common tasks & commands
+- **[Delivery Checklist](./docs/DELIVERY_CHECKLIST.md)** - Pre-deployment checklist
+
+👉 **[View All Documentation](./docs/README.md)**
 
 ## 🎯 Quick Examples
 
 ### Using Components
+
 ```tsx
-import { Button, Input } from '@/components/base';
-import { MainLayout } from '@/components/layout';
+import { Button, Input } from "@/components/base";
+import { MainLayout } from "@/components/layout";
 
 export default function Page() {
   return (
@@ -64,6 +96,7 @@ export default function Page() {
 ```
 
 ### Adding a New Page
+
 1. Create file in `src/app/your-page/page.tsx`
 2. Choose a layout
 3. Import components
