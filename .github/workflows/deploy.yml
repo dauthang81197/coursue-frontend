@@ -47,6 +47,14 @@ jobs:
           docker save $DOCKER_IMAGE:latest | gzip > image.tar.gz
 
       # -------- DEPLOY (CHỈ KHI PUSH) --------
+      - name: Prepare SSH key
+        if: ${{ github.event_name == 'push' }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ env.EC2_HOST }} >> ~/.ssh/known_hosts
+
       - name: Copy files to EC2
         if: ${{ github.event_name == 'push' }}
         uses: appleboy/scp-action@v0.1.7
@@ -54,7 +62,7 @@ jobs:
           host: ${{ env.EC2_HOST }}
           username: ${{ env.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "image.tar.gz,docker-compose.yml,.env.production"
+          source: "image.tar.gz,docker-compose.yml"
           target: "/home/${{ env.EC2_USER }}/coursue-frontend"
 
       - name: Deploy on EC2
@@ -67,13 +75,19 @@ jobs:
           script: |
             cd /home/${{ env.EC2_USER }}/coursue-frontend
 
+            # Load Docker image
             docker load < image.tar.gz
             rm image.tar.gz
 
+            # Set environment variables
+            export NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL }}"
+
+            # Deploy
             docker compose down
             docker compose up -d
             docker image prune -f
 
+            # Show status
             docker compose ps
 
       - name: Verify deployment
@@ -84,10 +98,24 @@ jobs:
           username: ${{ env.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            # Wait for container to be ready
             sleep 10
-            if docker compose -f /home/${{ env.EC2_USER }}/coursue-frontend/docker-compose.yml ps | grep -q "Up"; then
+
+            # Check if container is running
+            cd /home/${{ env.EC2_USER }}/coursue-frontend
+            if docker compose ps | grep -q "Up"; then
               echo "✅ Deployment successful!"
+              echo "Container status:"
+              docker compose ps
+              echo ""
+              echo "Recent logs:"
+              docker compose logs --tail=50
             else
               echo "❌ Deployment failed!"
+              echo "Container status:"
+              docker compose ps
+              echo ""
+              echo "Error logs:"
+              docker compose logs --tail=100
               exit 1
             fi
