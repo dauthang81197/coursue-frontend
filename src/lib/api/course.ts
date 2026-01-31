@@ -1,10 +1,11 @@
 import apiClient from "./client";
 import type { Course, CreateCourseDto, UpdateCourseDto } from "../types/course";
+import type { PaginatedResponse, PaginationParams } from "../types";
 
 export const courseApi = {
-  // Get all courses
-  getAll: async (): Promise<Course[]> => {
-    const response = await apiClient.get("/courses");
+  // Get all courses with pagination
+  getAll: async (params?: PaginationParams): Promise<PaginatedResponse<Course>> => {
+    const response = await apiClient.get("/courses", { params });
     return response.data;
   },
 
