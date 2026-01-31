@@ -29,7 +29,7 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    console.log("Submitting login form with data:", formData, "Remember me:", rememberMe);
     try {
       await login(formData.email, formData.password);
 

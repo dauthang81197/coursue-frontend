@@ -15,7 +15,7 @@ const API_BASE_URL =
 
 // Tạo Axios instance
 export const apiClient: AxiosInstance = axios.create({
-    baseURL: API_BASE_URL,
+    baseURL: 'http://localhost:8000/api',
     headers: {
         "Content-Type": "application/json",
     },

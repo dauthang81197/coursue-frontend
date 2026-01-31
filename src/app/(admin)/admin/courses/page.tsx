@@ -6,18 +6,29 @@ import { courseApi } from "@/lib/api/course";
 import { Button } from "@/components/base/Button";
 import { CourseCard } from "@/components/course/CourseCard";
 import type { Course } from "@/lib/types/course";
+import type { PaginationParams } from "@/lib/types";
 
 export default function AdminCoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState({
+    total: 0,
+    page: 1,
+    limit: 10,
+  });
 
-  const loadCourses = async () => {
+  const loadCourses = async (params?: PaginationParams) => {
     try {
       setLoading(true);
-      const data = await courseApi.getAll();
-      console.log("Loaded courses:", data);
-      setCourses(data);
+      const response = await courseApi.getAll(params);
+      console.log("Loaded courses:", response);
+      setCourses(response.data);
+      setPagination({
+        total: response.total,
+        page: response.page,
+        limit: response.limit,
+      });
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to load courses";
@@ -59,7 +70,7 @@ export default function AdminCoursesPage() {
       </div>
     );
   }
-
+  console.log(courses, "àdjhz")
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
@@ -74,7 +85,7 @@ export default function AdminCoursesPage() {
         </Link>
       </div>
 
-      {courses.length === 0 ? (
+      {courses?.length === 0 ? (
         <div className="text-center py-12">
           <svg
             className="mx-auto h-12 w-12 text-gray-400"
@@ -100,16 +111,46 @@ export default function AdminCoursesPage() {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {courses.map((course) => (
-            <CourseCard
-              key={course.id}
-              course={course}
-              onDelete={handleDelete}
-              isAdmin
-            />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {courses && courses.map((course) => (
+              <CourseCard
+                key={course.id}
+                course={course}
+                onDelete={handleDelete}
+                isAdmin
+              />
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {pagination.total > pagination.limit && (
+            <div className="mt-8 flex items-center justify-between border-t border-gray-200 pt-6">
+              <div className="text-sm text-gray-700">
+                Showing <span className="font-medium">{(pagination.page - 1) * pagination.limit + 1}</span> to{" "}
+                <span className="font-medium">
+                  {Math.min(pagination.page * pagination.limit, pagination.total)}
+                </span> of <span className="font-medium">{pagination.total}</span> results
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  disabled={pagination.page === 1}
+                  onClick={() => loadCourses({ page: pagination.page - 1, limit: pagination.limit })}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  disabled={pagination.page * pagination.limit >= pagination.total}
+                  onClick={() => loadCourses({ page: pagination.page + 1, limit: pagination.limit })}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
