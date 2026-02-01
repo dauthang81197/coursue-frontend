@@ -6,14 +6,21 @@ interface VideoPlayerProps {
   videoUrl: string;
   title: string;
   onEnded?: () => void;
+  videoRef?: React.RefObject<HTMLVideoElement | null>;
+  showTranscript?: boolean;
+  onTranscriptToggle?: () => void;
 }
 
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   videoUrl,
   title,
   onEnded,
+  videoRef: externalVideoRef,
+  showTranscript = false,
+  onTranscriptToggle,
 }) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const internalVideoRef = useRef<HTMLVideoElement>(null);
+  const videoRef = externalVideoRef || internalVideoRef;
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -318,6 +325,30 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   />
                 </svg>
               </button>
+
+              {/* Transcript Toggle */}
+              {onTranscriptToggle && (
+                <button
+                  onClick={onTranscriptToggle}
+                  className={`text-white hover:text-primary-400 transition-colors ${showTranscript ? 'text-primary-400' : ''
+                    }`}
+                  aria-label="Toggle transcript"
+                >
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                </button>
+              )}
             </div>
           </div>
         </div>

@@ -119,6 +119,7 @@ export interface Lesson {
   createdAt: string;
   updatedAt: string;
   children?: Lesson[];
+  videoUrl: string; // Presigned URL for video access
 }
 
 export interface CreateLessonDto {
@@ -166,26 +167,59 @@ export interface VideoUrlResponse {
   url: string;
 }
 
+// Transcript Types
+export interface TranscriptSegment {
+  start: number;
+  end: number;
+  text: string;
+}
+
+export interface TranscriptData {
+  content: string;
+  segments: TranscriptSegment[];
+  language: string;
+  source: string;
+  duration: number;
+  wordCount: number;
+}
+
+export interface TranscriptResponse {
+  hasTranscript: boolean;
+  transcript?: TranscriptData;
+}
+
 // Progress Types
 export interface LessonProgress {
   lessonId: string;
+  lessonName: string;
+  lessonOrder: number;
+  lessonType: string;
+  duration: number;
   completed: boolean;
-  completedAt?: string;
+  completedAt?: string | null;
+  watchedDuration: number;
 }
 
 export interface SectionProgress {
   sectionId: string;
+  sectionName: string;
+  sectionOrder: number;
   lessons: LessonProgress[];
-  completedLessons: number;
-  totalLessons: number;
-  progress: number;
+  completedLessons?: number;
+  totalLessons?: number;
+  progress?: number;
 }
 
 export interface CourseProgress {
   courseId: string;
+  courseName: string;
+  progressPercent: number;
+  completedLessonsCount: number;
+  totalLessonsCount: number;
   sections: SectionProgress[];
-  completedLessons: number;
-  totalLessons: number;
-  progress: number;
   lastAccessedLessonId?: string;
+  // Legacy fields for compatibility
+  completedLessons?: number;
+  totalLessons?: number;
+  progress?: number;
 }

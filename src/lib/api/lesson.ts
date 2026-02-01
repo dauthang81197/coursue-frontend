@@ -5,6 +5,7 @@ import type {
   UpdateLessonDto,
   VideoUploadResponse,
   VideoUrlResponse,
+  TranscriptResponse,
 } from "../types/course";
 
 export const lessonApi = {
@@ -15,8 +16,8 @@ export const lessonApi = {
   },
 
   // Mark lesson as completed
-  markComplete: async (lessonId: string): Promise<void> => {
-    await apiClient.post(`/lessons/${lessonId}/complete`);
+  markComplete: async (lessonId: string, watchedDuration?: number): Promise<void> => {
+    await apiClient.post(`/lessons/${lessonId}/complete`, { watchedDuration });
   },
 
   // Mark lesson as uncompleted
@@ -78,11 +79,27 @@ export const lessonApi = {
     return response.data;
   },
 
-  // Get video URL (presigned)
+  // Get video URL (presigned) for students
   getVideoUrl: async (lessonId: string): Promise<string> => {
+    const response = await apiClient.get<VideoUrlResponse>(
+      `/lessons/${lessonId}/video-url`,
+    );
+    return response.data.url;
+  },
+
+  // Get video URL (presigned) for admin
+  getAdminVideoUrl: async (lessonId: string): Promise<string> => {
     const response = await apiClient.get<VideoUrlResponse>(
       `/admin/courses/lessons/${lessonId}/video-url`,
     );
     return response.data.url;
+  },
+
+  // Get transcript for lesson
+  getTranscript: async (lessonId: string): Promise<TranscriptResponse> => {
+    const response = await apiClient.get<TranscriptResponse>(
+      `/lessons/${lessonId}/transcript`,
+    );
+    return response.data;
   },
 };

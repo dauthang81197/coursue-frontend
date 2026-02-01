@@ -22,7 +22,6 @@ export default function AdminCoursesPage() {
     try {
       setLoading(true);
       const response = await courseApi.getAll(params);
-      console.log("Loaded courses:", response);
       setCourses(response.data);
       setPagination({
         total: response.total,
@@ -70,7 +69,7 @@ export default function AdminCoursesPage() {
       </div>
     );
   }
-  console.log(courses, "àdjhz")
+
   return (
     <div>
       <div className="flex items-center justify-between mb-8">

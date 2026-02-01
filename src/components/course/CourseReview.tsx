@@ -10,7 +10,6 @@ interface CourseReviewProps {
 }
 
 export function CourseReview({ course, onFinish, onBack }: CourseReviewProps) {
-  console.log(course, "course");
   return (
     <div className="space-y-6">
       <div>
@@ -61,11 +60,10 @@ export function CourseReview({ course, onFinish, onBack }: CourseReviewProps) {
               <dt className="text-sm font-medium text-gray-500">Status</dt>
               <dd className="mt-1">
                 <span
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    course.status === "published"
+                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${course.status === "published"
                       ? "bg-green-100 text-green-800"
                       : "bg-yellow-100 text-yellow-800"
-                  }`}
+                    }`}
                 >
                   {course.status}
                 </span>
