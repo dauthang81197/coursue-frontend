@@ -64,7 +64,6 @@ export const LessonSidebar: React.FC<LessonSidebarProps> = ({
           const isExpanded = expandedSections.has(section.id);
           const sectionLessons = lessons[section.id] || [];
           const sectionProgress = getSectionProgress(section.id);
-
           return (
             <div key={section.id}>
               {/* Section Header */}
@@ -115,9 +114,8 @@ export const LessonSidebar: React.FC<LessonSidebarProps> = ({
                     )}
                   </div>
                   <svg
-                    className={`w-5 h-5 text-gray-500 transition-transform shrink-0 ${
-                      isExpanded ? "rotate-180" : ""
-                    }`}
+                    className={`w-5 h-5 text-gray-500 transition-transform shrink-0 ${isExpanded ? "rotate-180" : ""
+                      }`}
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -143,11 +141,10 @@ export const LessonSidebar: React.FC<LessonSidebarProps> = ({
                       <button
                         key={lesson.id}
                         onClick={() => onLessonSelect(lesson.id)}
-                        className={`w-full px-4 py-3 hover:bg-gray-100 transition-colors text-left border-l-4 ${
-                          isActive
-                            ? "border-primary-600 bg-primary-50"
-                            : "border-transparent"
-                        }`}
+                        className={`w-full px-4 py-3 hover:bg-gray-100 transition-colors text-left border-l-4 ${isActive
+                          ? "border-primary-600 bg-primary-50"
+                          : "border-transparent"
+                          }`}
                       >
                         <div className="flex items-start gap-3">
                           {/* Checkbox/Icon */}
@@ -179,11 +176,10 @@ export const LessonSidebar: React.FC<LessonSidebarProps> = ({
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-2">
                               <h4
-                                className={`font-medium text-sm ${
-                                  isActive
-                                    ? "text-primary-600"
-                                    : "text-gray-900"
-                                }`}
+                                className={`font-medium text-sm ${isActive
+                                  ? "text-primary-600"
+                                  : "text-gray-900"
+                                  }`}
                               >
                                 {lesson.title}
                               </h4>

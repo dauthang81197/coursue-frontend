@@ -15,10 +15,9 @@ interface CourseCardProps {
 export const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
   const discount = course.originalPrice
     ? Math.round(
-        ((course.originalPrice - course.price) / course.originalPrice) * 100,
-      )
+      ((course.originalPrice - course.price) / course.originalPrice) * 100,
+    )
     : 0;
-  console.log(course, "àdslkjf");
   return (
     <Link
       href={`/courses/${course.id}`}
@@ -68,11 +67,10 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
               {[...Array(5)].map((_, i) => (
                 <svg
                   key={i}
-                  className={`w-4 h-4 ${
-                    i < Math.floor(course.rating)
+                  className={`w-4 h-4 ${i < Math.floor(course.rating)
                       ? "text-yellow-400"
                       : "text-gray-300"
-                  }`}
+                    }`}
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >

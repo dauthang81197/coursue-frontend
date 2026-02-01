@@ -24,7 +24,7 @@ export default function Home() {
               <Button
                 variant="primary"
                 size="lg"
-                className="bg-white text-primary-600 hover:bg-gray-100"
+                className="text-primary-600 hover:bg-gray-100"
               >
                 Join Now
               </Button>

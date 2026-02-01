@@ -71,7 +71,7 @@ export const useAuthStore = create<AuthState>()(
           const message =
             error instanceof Error && "response" in error
               ? (error as { response?: { data?: { message?: string } } })
-                  .response?.data?.message || "Login failed"
+                .response?.data?.message || "Login failed"
               : "Login failed";
           set({ error: message, isLoading: false });
           throw error;
@@ -106,7 +106,7 @@ export const useAuthStore = create<AuthState>()(
           const message =
             error instanceof Error && "response" in error
               ? (error as { response?: { data?: { message?: string } } })
-                  .response?.data?.message || "Registration failed"
+                .response?.data?.message || "Registration failed"
               : "Registration failed";
           set({ error: message, isLoading: false });
           throw error;
