@@ -15,8 +15,8 @@ interface CourseCardProps {
 export const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
   const discount = course.originalPrice
     ? Math.round(
-      ((course.originalPrice - course.price) / course.originalPrice) * 100,
-    )
+        ((course.originalPrice - course.price) / course.originalPrice) * 100,
+      )
     : 0;
   return (
     <Link
@@ -25,12 +25,30 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
     >
       {/* Thumbnail */}
       <div className="relative aspect-video bg-gray-100">
-        <Image
-          src={course.thumbnail}
-          alt={course.title}
-          fill
-          className="object-cover group-hover:scale-105 transition-transform duration-300"
-        />
+        {course.thumbnail ? (
+          <Image
+            src={course.thumbnail}
+            alt={course.title}
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-primary-100 to-primary-200">
+            <svg
+              className="w-16 h-16 text-primary-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
+            </svg>
+          </div>
+        )}
         {discount > 0 && (
           <div className="absolute top-2 left-2">
             <Badge variant="error" size="md">
@@ -67,10 +85,11 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
               {[...Array(5)].map((_, i) => (
                 <svg
                   key={i}
-                  className={`w-4 h-4 ${i < Math.floor(course.rating)
+                  className={`w-4 h-4 ${
+                    i < Math.floor(course.rating)
                       ? "text-yellow-400"
                       : "text-gray-300"
-                    }`}
+                  }`}
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >
