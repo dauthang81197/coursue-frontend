@@ -8,7 +8,12 @@ import { LessonSidebar } from "@/components/course/LessonSidebar";
 import { Button } from "@/components/base";
 import { courseApi } from "@/lib/api/courses";
 import { lessonApi } from "@/lib/api/lesson";
-import { Lesson, CourseProgress, Section, TranscriptData } from "@/lib/types/course";
+import {
+  Lesson,
+  CourseProgress,
+  Section,
+  TranscriptData,
+} from "@/lib/types/course";
 
 interface CourseWithSections {
   id: string;
@@ -39,8 +44,13 @@ export default function LearnPage() {
       if (showTranscript && currentLesson && !transcript) {
         setIsLoadingTranscript(true);
         try {
-          const transcriptResponse = await lessonApi.getTranscript(currentLesson.id);
-          if (transcriptResponse.hasTranscript && transcriptResponse.transcript) {
+          const transcriptResponse = await lessonApi.getTranscript(
+            currentLesson.id,
+          );
+          if (
+            transcriptResponse.hasTranscript &&
+            transcriptResponse.transcript
+          ) {
             setTranscript(transcriptResponse.transcript);
           } else {
             setTranscript(null);
@@ -87,7 +97,10 @@ export default function LearnPage() {
           sections,
         });
         setProgress(progressData);
-
+        console.log(
+          "Set current lesson to last accessed lesson:",
+          progressData,
+        );
         // Set initial lesson (last accessed or first lesson)
         if (progressData.lastAccessedLessonId) {
           const lesson = await lessonApi.getById(
@@ -98,7 +111,10 @@ export default function LearnPage() {
           // Load video URL
           if (lesson.videoKey) {
             try {
-              const url = await lessonApi.getVideoUrl(progressData.lastAccessedLessonId);
+              const url = await lessonApi.getVideoUrl(
+                progressData.lastAccessedLessonId,
+              );
+              console.log("Loaded video URL for last accessed lesson:", url);
               setVideoUrl(url);
             } catch (videoErr) {
               console.error("Failed to load video URL:", videoErr);
@@ -151,6 +167,15 @@ export default function LearnPage() {
       // Reset transcript when changing lessons
       setTranscript(null);
 
+      // Update last accessed lesson on server
+      try {
+        await courseApi.updateLastAccessedLesson(courseId, lessonId);
+        console.log("Updated last accessed lesson:", lessonId);
+      } catch (updateErr) {
+        console.error("Failed to update last accessed lesson:", updateErr);
+        // Don't block lesson loading if this fails
+      }
+
       // Load video URL if lesson has video
       if (lesson.videoKey) {
         try {
@@ -181,9 +206,10 @@ export default function LearnPage() {
       setIsCompletingLesson(true);
 
       // Get watched duration from video if marking as complete
-      const watchedDuration = !isCompleted && videoRef.current
-        ? Math.floor(videoRef.current.currentTime)
-        : undefined;
+      const watchedDuration =
+        !isCompleted && videoRef.current
+          ? Math.floor(videoRef.current.currentTime)
+          : undefined;
 
       if (isCompleted) {
         await lessonApi.markUncomplete(lessonId);
@@ -252,7 +278,7 @@ export default function LearnPage() {
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   // Seek video to specific time
@@ -270,8 +296,8 @@ export default function LearnPage() {
 
       // Scroll video into view if needed
       videoRef.current.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center'
+        behavior: "smooth",
+        block: "center",
       });
     }
   };
@@ -369,8 +395,9 @@ export default function LearnPage() {
                 </h1>
                 {progress && (
                   <p className="text-sm text-gray-600">
-                    {progress.completedLessonsCount} / {progress.totalLessonsCount}{" "}
-                    lessons completed • {progress.progressPercent}%
+                    {progress.completedLessonsCount} /{" "}
+                    {progress.totalLessonsCount} lessons completed •{" "}
+                    {progress.progressPercent}%
                   </p>
                 )}
               </div>
@@ -403,15 +430,17 @@ export default function LearnPage() {
             {currentLesson ? (
               <>
                 <div className="flex gap-6">
-                  <div className={`transition-all ${showTranscript ? 'w-2/3' : 'w-full'}`}>
+                  <div
+                    className={`transition-all ${showTranscript ? "w-2/3" : "w-full"}`}
+                  >
                     <VideoPlayer
                       videoRef={videoRef}
-                      videoUrl={
-                        currentLesson.videoUrl
-                      }
+                      videoUrl={videoUrl || ""}
                       title={currentLesson.title}
                       showTranscript={showTranscript}
-                      onTranscriptToggle={() => setShowTranscript(!showTranscript)}
+                      onTranscriptToggle={() =>
+                        setShowTranscript(!showTranscript)
+                      }
                       onEnded={() => {
                         if (!isLessonCompleted) {
                           toggleLessonComplete(currentLesson.id, false);
@@ -422,16 +451,28 @@ export default function LearnPage() {
 
                   {/* Transcript Panel */}
                   {showTranscript && (
-                    <div className="w-1/3 bg-white rounded-lg border border-gray-200 p-4 max-h-[600px] overflow-y-auto">
+                    <div className="w-1/3 bg-white rounded-lg border border-gray-200 p-4 max-h-150 overflow-y-auto">
                       <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-semibold text-gray-900">Transcript</h3>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          Transcript
+                        </h3>
                         <button
                           onClick={() => setShowTranscript(false)}
                           className="text-gray-400 hover:text-gray-600 transition-colors"
                           aria-label="Close transcript"
                         >
-                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M6 18L18 6M6 6l12 12"
+                            />
                           </svg>
                         </button>
                       </div>
@@ -440,9 +481,13 @@ export default function LearnPage() {
                         {isLoadingTranscript ? (
                           <div className="text-center py-8">
                             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mb-2"></div>
-                            <p className="text-gray-600">Loading transcript...</p>
+                            <p className="text-gray-600">
+                              Loading transcript...
+                            </p>
                           </div>
-                        ) : transcript && transcript.segments && transcript.segments.length > 0 ? (
+                        ) : transcript &&
+                          transcript.segments &&
+                          transcript.segments.length > 0 ? (
                           transcript.segments.map((segment, index) => (
                             <div
                               key={index}

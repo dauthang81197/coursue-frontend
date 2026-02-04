@@ -125,7 +125,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       Math.min(duration, video.currentTime + seconds),
     );
   };
-
+  console.log(videoUrl, "falkhjsg");
   return (
     <div className="relative bg-black rounded-lg overflow-hidden group">
       {/* Video Element */}
@@ -330,8 +330,9 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
               {onTranscriptToggle && (
                 <button
                   onClick={onTranscriptToggle}
-                  className={`text-white hover:text-primary-400 transition-colors ${showTranscript ? 'text-primary-400' : ''
-                    }`}
+                  className={`text-white hover:text-primary-400 transition-colors ${
+                    showTranscript ? "text-primary-400" : ""
+                  }`}
                   aria-label="Toggle transcript"
                 >
                   <svg

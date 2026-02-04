@@ -64,4 +64,14 @@ export const courseApi = {
     );
     return response.data;
   },
+
+  /**
+   * Update last accessed lesson
+   */
+  updateLastAccessedLesson: async (
+    courseId: string,
+    lessonId: string,
+  ): Promise<void> => {
+    await apiClient.post(`/courses/${courseId}/last-accessed`, { lessonId });
+  },
 };
