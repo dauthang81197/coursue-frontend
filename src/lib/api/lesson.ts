@@ -16,7 +16,10 @@ export const lessonApi = {
   },
 
   // Mark lesson as completed
-  markComplete: async (lessonId: string, watchedDuration?: number): Promise<void> => {
+  markComplete: async (
+    lessonId: string,
+    watchedDuration?: number,
+  ): Promise<void> => {
     await apiClient.post(`/lessons/${lessonId}/complete`, { watchedDuration });
   },
 
@@ -82,7 +85,7 @@ export const lessonApi = {
   // Get video URL (presigned) for students
   getVideoUrl: async (lessonId: string): Promise<string> => {
     const response = await apiClient.get<VideoUrlResponse>(
-      `/lessons/${lessonId}/video-url`,
+      `/admin/lessons/${lessonId}/video-url`,
     );
     return response.data.url;
   },
