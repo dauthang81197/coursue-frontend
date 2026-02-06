@@ -106,15 +106,18 @@ export default function LearnPage() {
           const lesson = await lessonApi.getById(
             progressData.lastAccessedLessonId,
           );
+          console.log("Loaded last accessed lesson:", lesson);
           setCurrentLesson(lesson);
 
-          // Load video URL
-          if (lesson.videoKey) {
+          // Use videoUrl from lesson response (already presigned by backend)
+          if (lesson.videoUrl) {
+            setVideoUrl(lesson.videoUrl);
+          } else if (lesson.videoKey) {
+            // Fallback: if no videoUrl, try to get presigned URL
             try {
               const url = await lessonApi.getVideoUrl(
                 progressData.lastAccessedLessonId,
               );
-              console.log("Loaded video URL for last accessed lesson:", url);
               setVideoUrl(url);
             } catch (videoErr) {
               console.error("Failed to load video URL:", videoErr);
@@ -130,8 +133,11 @@ export default function LearnPage() {
               const firstLesson = await lessonApi.getById(lessons[0].id);
               setCurrentLesson(firstLesson);
 
-              // Load video URL
-              if (firstLesson.videoKey) {
+              // Use videoUrl from lesson response
+              if (firstLesson.videoUrl) {
+                setVideoUrl(firstLesson.videoUrl);
+              } else if (firstLesson.videoKey) {
+                // Fallback: get presigned URL
                 try {
                   const url = await lessonApi.getVideoUrl(firstLesson.id);
                   setVideoUrl(url);
@@ -162,6 +168,7 @@ export default function LearnPage() {
   const loadLesson = async (lessonId: string) => {
     try {
       const lesson = await lessonApi.getById(lessonId);
+      console.log("Loaded lesson:", lesson);
       setCurrentLesson(lesson);
 
       // Reset transcript when changing lessons
@@ -176,8 +183,11 @@ export default function LearnPage() {
         // Don't block lesson loading if this fails
       }
 
-      // Load video URL if lesson has video
-      if (lesson.videoKey) {
+      // Use videoUrl from lesson response (already presigned by backend)
+      if (lesson.videoUrl) {
+        setVideoUrl(lesson.videoUrl);
+      } else if (lesson.videoKey) {
+        // Fallback: get presigned URL if not in response
         try {
           const url = await lessonApi.getVideoUrl(lessonId);
           setVideoUrl(url);
