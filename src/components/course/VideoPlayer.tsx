@@ -48,7 +48,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       video.removeEventListener("loadedmetadata", handleLoadedMetadata);
       video.removeEventListener("ended", handleEnded);
     };
-  }, [onEnded]);
+  }, [onEnded, videoRef]);
 
   const togglePlay = () => {
     const video = videoRef.current;
