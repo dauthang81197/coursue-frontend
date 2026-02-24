@@ -11,11 +11,11 @@ import axios, {
 
 // Base URL từ environment variable hoặc fallback
 const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+    process.env.NEXT_PUBLIC_API_URL || "http://144.91.120.200:8000/api";
 
 // Tạo Axios instance
 export const apiClient: AxiosInstance = axios.create({
-    baseURL: 'http://localhost:8000/api',
+    baseURL: API_BASE_URL,
     headers: {
         "Content-Type": "application/json",
     },
