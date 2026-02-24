@@ -13,6 +13,7 @@ import {
   CourseProgress,
   Section,
   TranscriptData,
+  LessonProgress,
 } from "@/lib/types/course";
 
 interface CourseWithSections {
@@ -247,25 +248,27 @@ export default function LearnPage() {
     const map: Record<string, Lesson[]> = {};
     progress.sections.forEach((section) => {
       // Map progress lessons to Lesson type
-      const lessons: Lesson[] = section.lessons.map((progressLesson: any) => ({
-        id: progressLesson.lessonId,
-        sectionId: section.sectionId,
-        title: progressLesson.lessonName,
-        description: "",
-        type: progressLesson.lessonType,
-        content: "",
-        duration: progressLesson.duration,
-        orderIndex: progressLesson.lessonOrder,
-        isFree: false,
-        attachments: [],
-        parentId: null,
-        path: null,
-        level: 0,
-        childrenCount: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        videoUrl: progressLesson.videoUrl || "",
-      }));
+      const lessons: Lesson[] = section.lessons.map(
+        (progressLesson: LessonProgress) => ({
+          id: progressLesson.lessonId,
+          sectionId: section.sectionId,
+          title: progressLesson.lessonName,
+          description: "",
+          type: progressLesson.lessonType,
+          content: "",
+          duration: progressLesson.duration,
+          orderIndex: progressLesson.lessonOrder,
+          isFree: false,
+          attachments: [],
+          parentId: null,
+          path: null,
+          level: 0,
+          childrenCount: 0,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          videoUrl: progressLesson.videoUrl || "",
+        }),
+      );
       map[section.sectionId] = lessons;
     });
     return map;

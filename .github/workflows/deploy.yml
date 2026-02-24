@@ -1,4 +1,4 @@
-name: Deploy to EC2
+name: Deploy to VPS
 
 on:
   push:
@@ -11,8 +11,8 @@ on:
 
 env:
   DOCKER_IMAGE: coursue-frontend
-  EC2_HOST: ${{ secrets.EC2_HOST }}
-  EC2_USER: ${{ secrets.EC2_USER }}
+  VPS_HOST: ${{ secrets.VPS_HOST }}
+  VPS_USER: ${{ secrets.VPS_USER }}
   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
 
 jobs:
@@ -53,29 +53,29 @@ jobs:
         if: ${{ github.event_name == 'push' }}
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ env.EC2_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ env.VPS_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Copy files to EC2
+      - name: Copy files to VPS
         if: ${{ github.event_name == 'push' }}
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ env.EC2_HOST }}
-          username: ${{ env.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
+          host: ${{ env.VPS_HOST }}
+          username: ${{ env.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
           source: "image.tar.gz,docker-compose.yml"
-          target: "/home/${{ env.EC2_USER }}/coursue-frontend"
+          target: "/home/${{ env.VPS_USER }}/coursue-frontend"
 
-      - name: Deploy on EC2
+      - name: Deploy on VPS
         if: ${{ github.event_name == 'push' }}
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ env.EC2_HOST }}
-          username: ${{ env.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
+          host: ${{ env.VPS_HOST }}
+          username: ${{ env.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            cd /home/${{ env.EC2_USER }}/coursue-frontend
+            cd /home/${{ env.VPS_USER }}/coursue-frontend
 
             # Load Docker image
             docker load < image.tar.gz
@@ -96,15 +96,15 @@ jobs:
         if: ${{ github.event_name == 'push' }}
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ env.EC2_HOST }}
-          username: ${{ env.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
+          host: ${{ env.VPS_HOST }}
+          username: ${{ env.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             # Wait for container to be ready
             sleep 10
 
             # Check if container is running
-            cd /home/${{ env.EC2_USER }}/coursue-frontend
+            cd /home/${{ env.VPS_USER }}/coursue-frontend
             if docker compose ps | grep -q "Up"; then
               echo "✅ Deployment successful!"
               echo "Container status:"
