@@ -14,6 +14,7 @@ import {
   Section,
   TranscriptData,
   LessonProgress,
+  LessonType,
 } from "@/lib/types/course";
 
 interface CourseWithSections {
@@ -245,6 +246,12 @@ export default function LearnPage() {
   const lessonsBySection = React.useMemo(() => {
     if (!progress) return {};
 
+    const toLessonType = (value: string): LessonType => {
+      return Object.values(LessonType).includes(value as LessonType)
+        ? (value as LessonType)
+        : LessonType.VIDEO;
+    };
+
     const map: Record<string, Lesson[]> = {};
     progress.sections.forEach((section) => {
       // Map progress lessons to Lesson type
@@ -254,7 +261,7 @@ export default function LearnPage() {
           sectionId: section.sectionId,
           title: progressLesson.lessonName,
           description: "",
-          type: progressLesson.lessonType,
+          type: toLessonType(progressLesson.lessonType),
           content: "",
           duration: progressLesson.duration,
           orderIndex: progressLesson.lessonOrder,
@@ -266,7 +273,7 @@ export default function LearnPage() {
           childrenCount: 0,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          videoUrl: progressLesson.videoUrl || "",
+          videoUrl: "",
         }),
       );
       map[section.sectionId] = lessons;
