@@ -135,10 +135,10 @@ export function LessonNode({
           </div>
           <div className="flex items-center mt-1 text-xs text-gray-500 space-x-3">
             <span className="capitalize">{lesson.type}</span>
-            {lesson.duration > 0 && (
+            {(lesson.duration ?? 0) > 0 && (
               <span>
-                {Math.floor(lesson.duration / 60)}:
-                {(lesson.duration % 60).toString().padStart(2, "0")}
+                {Math.floor((lesson.duration ?? 0) / 60)}:
+                {((lesson.duration ?? 0) % 60).toString().padStart(2, "0")}
               </span>
             )}
             {hasChildren && (
