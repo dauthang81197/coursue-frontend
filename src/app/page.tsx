@@ -1,6 +1,5 @@
 import { MainLayout } from "@/components/layout";
 import { Button } from "@/components/base";
-import { CourseList } from "@/components/common";
 import Link from "next/link";
 
 export default function Home() {
@@ -36,7 +35,7 @@ export default function Home() {
       {/* Featured Courses Section */}
       <section className="py-12 bg-gray-50">
         <div className="container-custom">
-          <CourseList title="Continue Watching" showSeeAll={true} limit={6} />
+          {/*<CourseList title="Continue Watching" showSeeAll={true} limit={6} />*/}
         </div>
       </section>
 
