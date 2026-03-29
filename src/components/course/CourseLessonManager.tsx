@@ -34,12 +34,12 @@ export function CourseLessonManager({ courseId, onNext, onBack }: CourseLessonMa
   // Create-lesson form state
   const [form, setForm] = useState({
     title: "",
-    description: "",
     type: "theory" as LessonType,
     content: "",
     xpReward: 10,
     isPremium: false,
     duration: 0,
+    order: 0
   });
 
   // Attach-by-ID form state
@@ -65,8 +65,9 @@ export function CourseLessonManager({ courseId, onNext, onBack }: CourseLessonMa
     try {
       setSaving(true); setError(null);
       const created: Lesson = await lessonApi.create({
+        courseId,
+        order:       Number(form.order),
         title:       form.title,
-        description: form.description || undefined,
         type:        form.type,
         content:     form.content || undefined,
         xpReward:    form.xpReward,
@@ -75,7 +76,7 @@ export function CourseLessonManager({ courseId, onNext, onBack }: CourseLessonMa
       });
       await courseApi.attachLesson(courseId, created.id);
       setModal(null);
-      setForm({ title: "", description: "", type: "theory" as LessonType, content: "", xpReward: 10, isPremium: false, duration: 0 });
+      setForm({ title: "",  type: "theory" as LessonType, content: "", xpReward: 10, isPremium: false, duration: 0, order: 0 });
       await loadRoadmap();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to create lesson");
@@ -218,9 +219,9 @@ export function CourseLessonManager({ courseId, onNext, onBack }: CourseLessonMa
                     placeholder="e.g., Introduction to Piano"
                   />
                   <Textarea
-                    label="Description"
-                    value={form.description}
-                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    label="Content"
+                    value={form.content}
+                    onChange={(e) => setForm({ ...form, content: e.target.value })}
                     placeholder="Brief description..."
                     rows={2}
                   />
@@ -248,15 +249,13 @@ export function CourseLessonManager({ courseId, onNext, onBack }: CourseLessonMa
                     />
                   </div>
 
-                  {(form.type === "theory" || form.type === "article") && (
-                    <Textarea
-                      label="Content"
-                      value={form.content}
-                      onChange={(e) => setForm({ ...form, content: e.target.value })}
-                      placeholder="Lesson content (supports Markdown/HTML)..."
-                      rows={5}
-                    />
-                  )}
+
+                  <Input
+                      label="Thứ tự *"
+                      type="number"
+                      value={form.order}
+                      onChange={(e) => setForm({ ...form, order: Number(e.target.value) })}
+                  />
 
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input

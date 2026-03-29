@@ -173,6 +173,7 @@ export function LessonManager({
       {/* Lesson Modal */}
       {showModal && (
         <LessonModal
+          courseId={""}
           sectionId={selectedSection}
           lesson={editingLesson}
           parentLesson={parentLesson}
