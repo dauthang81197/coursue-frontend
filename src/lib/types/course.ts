@@ -180,6 +180,8 @@ export interface CreateLessonDto {
   orderIndex?: number;
   sectionId?: string;
   parentId?: string | null;
+  courseId?: string;
+  order: number;
 }
 
 export interface UpdateLessonDto {

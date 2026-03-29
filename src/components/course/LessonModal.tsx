@@ -11,6 +11,7 @@ import { QuizManager } from "./QuizManager";
 import type { Lesson, CreateLessonDto, LessonType } from "@/lib/types/course";
 
 interface LessonModalProps {
+  courseId: string;
   sectionId: string;
   lesson?: Lesson | null;
   parentLesson?: Lesson | null;
@@ -19,6 +20,7 @@ interface LessonModalProps {
 }
 
 export function LessonModal({
+  courseId,
   sectionId,
   lesson,
   parentLesson,
@@ -65,6 +67,7 @@ export function LessonModal({
         sectionId,
         orderIndex: formData.orderIndex || 0,
         parentId: formData.parentId,
+        courseId,
       };
 
       if (lesson) {
