@@ -66,6 +66,7 @@ export function LessonModal({
         isFree: formData.isFree || false,
         sectionId,
         orderIndex: formData.orderIndex || 0,
+        order: formData.orderIndex || 0,
         parentId: formData.parentId,
         courseId,
       };
