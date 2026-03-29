@@ -1,8 +1,7 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Badge } from "../base/Badge";
-import { Course } from "@/lib/types";
+import type { Course } from "@/lib/types/course";
 
 interface EnrolledCourseCardProps {
   course: Course;
@@ -33,7 +32,7 @@ export const EnrolledCourseCard: React.FC<EnrolledCourseCardProps> = ({
               className="object-cover group-hover:scale-105 transition-transform duration-300"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-primary-100 to-primary-200">
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary-100 to-primary-200">
               <svg
                 className="w-12 h-12 text-primary-400"
                 fill="none"
@@ -44,39 +43,45 @@ export const EnrolledCourseCard: React.FC<EnrolledCourseCardProps> = ({
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
                 />
               </svg>
             </div>
           )}
+          {/* Premium badge */}
+          <div className="absolute top-2 right-2">
+            {course.isPremium ? (
+              <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-yellow-400 text-yellow-900">
+                ⭐ Premium
+              </span>
+            ) : (
+              <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-green-100 text-green-700">
+                Free
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Content */}
         <div className="flex-1 flex flex-col justify-between min-w-0">
           <div>
-            {/* Category Badge */}
-            <div className="mb-2">
-              <Badge variant="primary" size="sm">
-                {course.category}
-              </Badge>
-            </div>
-
             {/* Title */}
-            <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-primary-600 transition-colors">
+            <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2 group-hover:text-primary-600 transition-colors">
               {course.title}
             </h3>
-
-            {/* Instructor */}
-            <p className="text-sm text-gray-600 mb-3">{course.instructor}</p>
+            {course.description && (
+              <p className="text-sm text-gray-500 line-clamp-2 mb-2">
+                {course.description}
+              </p>
+            )}
           </div>
 
           {/* Progress Bar */}
           <div>
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-1">
               <span className="text-sm font-medium text-gray-700">
                 {progress}% Complete
               </span>
-              <span className="text-xs text-gray-500">{course.duration}</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div

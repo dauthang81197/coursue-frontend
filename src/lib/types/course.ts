@@ -1,69 +1,46 @@
-// Course Types
-export enum CourseLevel {
-  BEGINNER = "beginner",
-  INTERMEDIATE = "intermediate",
-  ADVANCED = "advanced",
-  ALL_LEVELS = "all_levels",
-}
-
-export enum CourseStatus {
-  DRAFT = "draft",
-  PUBLISHED = "published",
-  ARCHIVED = "archived",
-}
-
+// ─── Course (new simplified model) ───────────────────────────────────────────
 export interface Course {
   id: string;
   title: string;
   description: string;
-  category: string;
-  level: CourseLevel;
-  thumbnail?: string;
-  price: number;
-  discountPrice?: number;
-  language: string;
-  tags: string[];
-  status: CourseStatus;
-  instructorId: string;
-  enrollmentCount: number;
-  rating: number;
-  reviewCount: number;
-  totalDuration: number;
-  totalLessons: number;
-  sectionCount: number;
-  lessonCount: number;
-  createdAt: string;
-  updatedAt: string;
-  sections: Section[];
+  thumbnail?: string | null;
+  isPremium: boolean;
+  order: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface CreateCourseDto {
   title: string;
   description: string;
-  category: string;
-  level: CourseLevel;
   thumbnail?: string;
-  price?: number;
-  discountPrice?: number;
-  language?: string;
-  tags?: string[];
-  status?: CourseStatus;
+  isPremium?: boolean;
+  order?: number;
 }
 
 export interface UpdateCourseDto {
   title?: string;
   description?: string;
-  category?: string;
-  level?: CourseLevel;
   thumbnail?: string;
-  price?: number;
-  discountPrice?: number;
-  language?: string;
-  tags?: string[];
-  status?: CourseStatus;
+  isPremium?: boolean;
+  order?: number;
 }
 
-// Section Types
+// ─── Legacy enums (kept for compatibility) ────────────────────────────────────
+export enum CourseLevel {
+  BEGINNER     = "beginner",
+  INTERMEDIATE = "intermediate",
+  ADVANCED     = "advanced",
+  ALL_LEVELS   = "all_levels",
+}
+
+export enum CourseStatus {
+  DRAFT     = "draft",
+  PUBLISHED = "published",
+  ARCHIVED  = "archived",
+}
+
+// ─── Section (legacy, kept for compatibility) ─────────────────────────────────
 export interface Section {
   id: string;
   courseId: string;
@@ -76,50 +53,119 @@ export interface Section {
   updatedAt: string;
 }
 
-export interface CreateSectionDto {
-  title: string;
-  description?: string;
-  orderIndex: number;
-  courseId: string;
-}
-
 export interface UpdateSectionDto {
   title?: string;
   description?: string;
   orderIndex?: number;
 }
 
-// Lesson Types
+// ─── Lesson ───────────────────────────────────────────────────────────────────
 export enum LessonType {
-  VIDEO = "video",
-  ARTICLE = "article",
-  QUIZ = "quiz",
-  CODING_EXERCISE = "coding_exercise",
+  VIDEO    = "video",
+  THEORY   = "theory",
+  ARTICLE  = "article",
+  QUIZ     = "quiz",
   RESOURCE = "resource",
 }
 
+// Quiz Types
+export interface QuizQuestion {
+  id: string;
+  text: string;
+  options: string[];
+  correctAnswer: string;
+}
+
+export interface Quiz {
+  id: string;
+  lessonId: string;
+  questions: QuizQuestion[];
+}
+
+export interface CreateQuizQuestionDto {
+  text: string;
+  options: string[];
+  correctAnswer: string;
+}
+
+export interface CreateQuizDto {
+  lessonId: string;
+  questions: CreateQuizQuestionDto[];
+}
+
+export interface SubmitQuizAnswerDto {
+  questionId: string;
+  answer: string;
+}
+
+export interface SubmitQuizDto {
+  answers: SubmitQuizAnswerDto[];
+}
+
+export interface QuizSubmitResponse {
+  score: number;
+  total: number;
+  passed: boolean;
+  correctAnswers: SubmitQuizAnswerDto[];
+}
+
+// ─── Roadmap (flat structure – no sections) ───────────────────────────────────
+export interface RoadmapLesson {
+  id: string;
+  title: string;
+  type: string;
+  order: number;
+  xpReward: number;
+  isPremium: boolean;
+  locked: boolean;
+  isCompleted: boolean;
+  content: string | null;
+}
+
+export interface RoadmapResponse {
+  course: {
+    id: string;
+    title: string;
+    description: string;
+    thumbnail: string | null;
+    isPremium: boolean;
+    order: number;
+  };
+  lessons: RoadmapLesson[];
+  completedCount: number;
+  totalCount: number;
+  progressPercent: number;
+}
+
+// legacy alias
+export type RoadmapSection = RoadmapResponse;
+
 export interface Lesson {
   id: string;
-  sectionId: string;
   title: string;
   description?: string;
   type: LessonType;
-  content?: string;
-  duration: number;
-  orderIndex: number;
-  isFree: boolean;
-  attachments: string[];
-  parentId: string | null;
-  path: string | null;
-  level: number;
-  childrenCount: number;
+  content?: string | null;
+  xpReward?: number;
+  isPremium?: boolean;
+  isFree?: boolean;
+  duration?: number;
+  order?: number;
+  orderIndex?: number;
+  locked?: boolean;
+  isCompleted?: boolean;
+  videoUrl?: string;
   videoKey?: string;
-  videoSize?: number;
-  videoFormat?: string;
-  createdAt: string;
-  updatedAt: string;
+  attachments?: string[];
+  createdAt?: string;
+  updatedAt?: string;
+  // Hierarchical / section-based fields (admin editor)
+  sectionId?: string;
+  parentId?: string | null;
+  path?: string | null;
+  level?: number;
   children?: Lesson[];
-  videoUrl: string; // Presigned URL for video access
+  childrenCount?: number;
 }
 
 export interface CreateLessonDto {
@@ -127,13 +173,13 @@ export interface CreateLessonDto {
   description?: string;
   type: LessonType;
   content?: string;
-  duration?: number;
-  orderIndex: number;
+  xpReward?: number;
+  isPremium?: boolean;
   isFree?: boolean;
-  sectionId: string;
-  attachments?: string[];
-  parentId?: string;
-  videoKey?: string;
+  duration?: number;
+  orderIndex?: number;
+  sectionId?: string;
+  parentId?: string | null;
 }
 
 export interface UpdateLessonDto {
@@ -141,11 +187,12 @@ export interface UpdateLessonDto {
   description?: string;
   type?: LessonType;
   content?: string;
+  xpReward?: number;
+  isPremium?: boolean;
+  isFree?: boolean;
   duration?: number;
   orderIndex?: number;
-  isFree?: boolean;
-  attachments?: string[];
-  parentId?: string;
+  order?: number;
 }
 
 // API Response Types

@@ -1,9 +1,14 @@
 import apiClient from "./client";
 import type {
   Section,
-  CreateSectionDto,
   UpdateSectionDto,
 } from "../types/course";
+
+export interface CreateSectionData {
+  title: string;
+  description?: string;
+  orderIndex: number;
+}
 
 export const sectionApi = {
   // Get sections by course
@@ -12,20 +17,20 @@ export const sectionApi = {
     return response.data;
   },
 
-  // Create section (admin)
-  create: async (data: CreateSectionDto): Promise<Section> => {
-    const response = await apiClient.post("/admin/courses/sections", data);
+  // Create section (admin) - courseId in URL path
+  create: async (courseId: string, data: CreateSectionData): Promise<Section> => {
+    const response = await apiClient.post(`/courses/${courseId}/sections`, data);
     return response.data;
   },
 
   // Update section (admin)
   update: async (id: string, data: UpdateSectionDto): Promise<Section> => {
-    const response = await apiClient.put(`/admin/courses/sections/${id}`, data);
+    const response = await apiClient.put(`/sections/${id}`, data);
     return response.data;
   },
 
   // Delete section (admin)
   delete: async (id: string): Promise<void> => {
-    await apiClient.delete(`/admin/courses/sections/${id}`);
+    await apiClient.delete(`/sections/${id}`);
   },
 };

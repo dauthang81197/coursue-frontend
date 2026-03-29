@@ -34,8 +34,7 @@ export default function DashboardPage() {
     useCourseStore();
 
   useEffect(() => {
-    // Fetch enrolled courses when component mounts
-    // fetchEnrolledCourses();
+    fetchEnrolledCourses();
   }, [fetchEnrolledCourses]);
 
   const userName = user?.name || user?.email || "User";

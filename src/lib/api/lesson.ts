@@ -9,48 +9,49 @@ import type {
 } from "../types/course";
 
 export const lessonApi = {
-  // Get lesson detail (for learning)
+  // Get lesson detail
   getById: async (lessonId: string): Promise<Lesson> => {
     const response = await apiClient.get(`/lessons/${lessonId}`);
     return response.data;
   },
 
-  // Mark lesson as completed
+  // Mark lesson as completed (new endpoint requires courseId)
   markComplete: async (
+    courseId: string,
     lessonId: string,
     watchedDuration?: number,
   ): Promise<void> => {
-    await apiClient.post(`/lessons/${lessonId}/complete`, { watchedDuration });
+    await apiClient.post(`/courses/${courseId}/lessons/${lessonId}/complete`, {
+      watchedDuration,
+    });
   },
 
   // Mark lesson as uncompleted
-  markUncomplete: async (lessonId: string): Promise<void> => {
-    await apiClient.post(`/lessons/${lessonId}/uncomplete`);
+  markUncomplete: async (courseId: string, lessonId: string): Promise<void> => {
+    await apiClient.delete(`/courses/${courseId}/lessons/${lessonId}/complete`);
   },
 
-  // Get lesson tree for section
+  // Get lessons for a section
   getTree: async (sectionId: string): Promise<Lesson[]> => {
-    const response = await apiClient.get(
-      `/admin/courses/sections/${sectionId}/lessons/tree`,
-    );
+    const response = await apiClient.get(`/sections/${sectionId}/lessons`);
     return response.data;
   },
 
   // Create lesson (admin)
   create: async (data: CreateLessonDto): Promise<Lesson> => {
-    const response = await apiClient.post("/admin/courses/lessons", data);
+    const response = await apiClient.post("/lessons", data);
     return response.data;
   },
 
   // Update lesson (admin)
   update: async (id: string, data: UpdateLessonDto): Promise<Lesson> => {
-    const response = await apiClient.put(`/admin/courses/lessons/${id}`, data);
+    const response = await apiClient.put(`/lessons/${id}`, data);
     return response.data;
   },
 
   // Delete lesson (admin)
   delete: async (id: string): Promise<void> => {
-    await apiClient.delete(`/admin/courses/lessons/${id}`);
+    await apiClient.delete(`/lessons/${id}`);
   },
 
   // Upload video for lesson
@@ -63,7 +64,7 @@ export const lessonApi = {
     formData.append("file", file);
 
     const response = await apiClient.post(
-      `/admin/courses/lessons/${lessonId}/video`,
+      `/lessons/${lessonId}/video`,
       formData,
       {
         headers: {
@@ -82,18 +83,10 @@ export const lessonApi = {
     return response.data;
   },
 
-  // Get video URL (presigned) for students
+  // Get video URL (presigned)
   getVideoUrl: async (lessonId: string): Promise<string> => {
     const response = await apiClient.get<VideoUrlResponse>(
-      `/admin/lessons/${lessonId}/video-url`,
-    );
-    return response.data.url;
-  },
-
-  // Get video URL (presigned) for admin
-  getAdminVideoUrl: async (lessonId: string): Promise<string> => {
-    const response = await apiClient.get<VideoUrlResponse>(
-      `/admin/courses/lessons/${lessonId}/video-url`,
+      `/lessons/${lessonId}/video-url`,
     );
     return response.data.url;
   },

@@ -205,7 +205,7 @@ export const LessonSidebar: React.FC<LessonSidebarProps> = ({
                             </div>
                             <div className="flex items-center gap-2 mt-1">
                               <span className="text-xs text-gray-600">
-                                {formatDuration(lesson.duration)}
+                                {formatDuration(lesson.duration ?? 0)}
                               </span>
                               {lesson.isFree && (
                                 <>

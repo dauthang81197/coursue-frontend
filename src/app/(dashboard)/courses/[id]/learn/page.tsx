@@ -1,662 +1,269 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { DashboardLayout } from "@/components/layout";
 import { VideoPlayer } from "@/components/course/VideoPlayer";
-import { LessonSidebar } from "@/components/course/LessonSidebar";
+import { QuizPlayer } from "@/components/course/QuizPlayer";
 import { Button } from "@/components/base";
 import { courseApi } from "@/lib/api/courses";
 import { lessonApi } from "@/lib/api/lesson";
-import {
-  Lesson,
-  CourseProgress,
-  Section,
-  TranscriptData,
-  LessonProgress,
-  LessonType,
-} from "@/lib/types/course";
-
-interface CourseWithSections {
-  id: string;
-  title: string;
-  sections?: Section[];
-}
+import { Lesson, LessonType, RoadmapLesson, RoadmapResponse, TranscriptData } from "@/lib/types/course";
 
 export default function LearnPage() {
-  const params = useParams();
-  const router = useRouter();
+  const params   = useParams();
+  const router   = useRouter();
   const courseId = params.id as string;
-
-  const [course, setCourse] = useState<CourseWithSections | null>(null);
-  const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
-  const [progress, setProgress] = useState<CourseProgress | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isCompletingLesson, setIsCompletingLesson] = useState(false);
-  const [showTranscript, setShowTranscript] = useState(false);
-  const [videoUrl, setVideoUrl] = useState<string | null>(null);
-  const [transcript, setTranscript] = useState<TranscriptData | null>(null);
-  const [isLoadingTranscript, setIsLoadingTranscript] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Load transcript when showTranscript is toggled on
-  useEffect(() => {
-    const loadTranscript = async () => {
-      if (showTranscript && currentLesson && !transcript) {
-        setIsLoadingTranscript(true);
-        try {
-          const transcriptResponse = await lessonApi.getTranscript(
-            currentLesson.id,
-          );
-          if (
-            transcriptResponse.hasTranscript &&
-            transcriptResponse.transcript
-          ) {
-            setTranscript(transcriptResponse.transcript);
-          } else {
-            setTranscript(null);
-          }
-        } catch (err) {
-          console.error("Failed to load transcript:", err);
-          setTranscript(null);
-        } finally {
-          setIsLoadingTranscript(false);
-        }
-      }
-    };
+  const [roadmap,        setRoadmap]        = useState<RoadmapResponse | null>(null);
+  const [currentLesson,  setCurrentLesson]  = useState<Lesson | null>(null);
+  const [videoUrl,       setVideoUrl]       = useState<string | null>(null);
+  const [transcript,     setTranscript]     = useState<TranscriptData | null>(null);
+  const [showTranscript, setShowTranscript] = useState(false);
+  const [isLoading,      setIsLoading]      = useState(true);
+  const [completing,     setCompleting]     = useState(false);
+  const [error,          setError]          = useState<string | null>(null);
 
-    loadTranscript();
-  }, [showTranscript, currentLesson, transcript]);
-
-  // Load course data and progress
-  useEffect(() => {
-    const loadCourseData = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        const [courseData, progressData] = await Promise.all([
-          courseApi.getCourseById(courseId),
-          courseApi.getCourseProgress(courseId),
-        ]);
-
-        // Map API response to our interface
-        const sections: Section[] = progressData.sections.map((sp) => ({
-          id: sp.sectionId,
-          title: sp.sectionName,
-          courseId: courseId,
-          orderIndex: sp.sectionOrder,
-          lessonCount: sp.lessons.length,
-          totalDuration: 0,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        }));
-
-        setCourse({
-          id: courseData.id,
-          title: courseData.title,
-          sections,
-        });
-        setProgress(progressData);
-        console.log(
-          "Set current lesson to last accessed lesson:",
-          progressData,
-        );
-        // Set initial lesson (last accessed or first lesson)
-        if (progressData.lastAccessedLessonId) {
-          const lesson = await lessonApi.getById(
-            progressData.lastAccessedLessonId,
-          );
-          console.log("Loaded last accessed lesson:", lesson);
-          setCurrentLesson(lesson);
-
-          // Use videoUrl from lesson response (already presigned by backend)
-          if (lesson.videoUrl) {
-            setVideoUrl(lesson.videoUrl);
-          } else if (lesson.videoKey) {
-            // Fallback: if no videoUrl, try to get presigned URL
-            try {
-              const url = await lessonApi.getVideoUrl(
-                progressData.lastAccessedLessonId,
-              );
-              setVideoUrl(url);
-            } catch (videoErr) {
-              console.error("Failed to load video URL:", videoErr);
-              setVideoUrl("https://www.w3schools.com/html/mov_bbb.mp4");
-            }
-          }
-        } else if (sections.length > 0) {
-          // Get first lesson from first section
-          const firstSection = sections[0];
-          if (firstSection) {
-            const lessons = await lessonApi.getTree(firstSection.id);
-            if (lessons.length > 0) {
-              const firstLesson = await lessonApi.getById(lessons[0].id);
-              setCurrentLesson(firstLesson);
-
-              // Use videoUrl from lesson response
-              if (firstLesson.videoUrl) {
-                setVideoUrl(firstLesson.videoUrl);
-              } else if (firstLesson.videoKey) {
-                // Fallback: get presigned URL
-                try {
-                  const url = await lessonApi.getVideoUrl(firstLesson.id);
-                  setVideoUrl(url);
-                } catch (videoErr) {
-                  console.error("Failed to load video URL:", videoErr);
-                  setVideoUrl("https://www.w3schools.com/html/mov_bbb.mp4");
-                }
-              }
-            }
-          }
-        }
-      } catch (err) {
-        console.error("Failed to load course:", err);
-        const errorMessage =
-          err instanceof Error ? err.message : "Failed to load course";
-        setError(errorMessage);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (courseId) {
-      loadCourseData();
-    }
+  // ── Load roadmap ────────────────────────────────────────────────────────────
+  const loadRoadmap = useCallback(async () => {
+    const data = await courseApi.getCourseRoadmap(courseId);
+    setRoadmap(data);
+    return data;
   }, [courseId]);
 
-  // Load lesson by ID
-  const loadLesson = async (lessonId: string) => {
+  // ── Load a single lesson ────────────────────────────────────────────────────
+  const loadLesson = useCallback(async (lessonId: string) => {
+    const lesson = await lessonApi.getById(lessonId);
+    setCurrentLesson(lesson);
+    setTranscript(null);
+    setShowTranscript(false);
+    if (lesson.videoUrl) {
+      setVideoUrl(lesson.videoUrl);
+    } else if (lesson.videoKey) {
+      try { setVideoUrl(await lessonApi.getVideoUrl(lessonId)); }
+      catch { setVideoUrl(null); }
+    } else {
+      setVideoUrl(null);
+    }
+  }, []);
+
+  // ── Initial load ────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!courseId) return;
+    setIsLoading(true);
+    loadRoadmap()
+      .then(async (data) => {
+        const first = data.lessons?.[0];
+        if (first) await loadLesson(first.id);
+      })
+      .catch((e) => setError(e instanceof Error ? e.message : "Failed to load"))
+      .finally(() => setIsLoading(false));
+  }, [courseId, loadRoadmap, loadLesson]);
+
+  // ── Transcript ──────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!showTranscript || !currentLesson || transcript) return;
+    lessonApi.getTranscript(currentLesson.id)
+      .then((r) => setTranscript(r.hasTranscript ? (r.transcript ?? null) : null))
+      .catch(() => setTranscript(null));
+  }, [showTranscript, currentLesson, transcript]);
+
+  // ── Mark complete ───────────────────────────────────────────────────────────
+  const markComplete = async (lessonId: string) => {
     try {
-      const lesson = await lessonApi.getById(lessonId);
-      console.log("Loaded lesson:", lesson);
-      setCurrentLesson(lesson);
-
-      // Reset transcript when changing lessons
-      setTranscript(null);
-
-      // Update last accessed lesson on server
-      try {
-        await courseApi.updateLastAccessedLesson(courseId, lessonId);
-        console.log("Updated last accessed lesson:", lessonId);
-      } catch (updateErr) {
-        console.error("Failed to update last accessed lesson:", updateErr);
-        // Don't block lesson loading if this fails
-      }
-
-      // Use videoUrl from lesson response (already presigned by backend)
-      if (lesson.videoUrl) {
-        setVideoUrl(lesson.videoUrl);
-      } else if (lesson.videoKey) {
-        // Fallback: get presigned URL if not in response
-        try {
-          const url = await lessonApi.getVideoUrl(lessonId);
-          setVideoUrl(url);
-        } catch (videoErr) {
-          console.error("Failed to load video URL:", videoErr);
-          // Fallback to default video if video URL loading fails
-          setVideoUrl("https://www.w3schools.com/html/mov_bbb.mp4");
-        }
-      } else {
-        setVideoUrl("https://www.w3schools.com/html/mov_bbb.mp4");
-      }
-    } catch (err) {
-      console.error("Failed to load lesson:", err);
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to load lesson";
-      setError(errorMessage);
-    }
+      setCompleting(true);
+      await lessonApi.markComplete(courseId, lessonId,
+        videoRef.current ? Math.floor(videoRef.current.currentTime) : undefined);
+      await loadRoadmap();
+    } catch { /* non-fatal */ }
+    finally { setCompleting(false); }
   };
 
-  // Mark lesson as complete/uncomplete
-  const toggleLessonComplete = async (
-    lessonId: string,
-    isCompleted: boolean,
-  ) => {
-    try {
-      setIsCompletingLesson(true);
+  const isCompleted = (lessonId: string) =>
+    roadmap?.lessons.find((l) => l.id === lessonId)?.isCompleted ?? false;
 
-      // Get watched duration from video if marking as complete
-      const watchedDuration =
-        !isCompleted && videoRef.current
-          ? Math.floor(videoRef.current.currentTime)
-          : undefined;
+  const formatTime = (s: number) =>
+    `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
-      if (isCompleted) {
-        await lessonApi.markUncomplete(lessonId);
-      } else {
-        await lessonApi.markComplete(lessonId, watchedDuration);
-      }
-
-      // Refresh progress
-      const newProgress = await courseApi.getCourseProgress(courseId);
-      setProgress(newProgress);
-    } catch (err) {
-      console.error("Failed to update lesson status:", err);
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to update lesson status";
-      setError(errorMessage);
-    } finally {
-      setIsCompletingLesson(false);
-    }
-  };
-
-  // Get lessons organized by section from progress data
-  const lessonsBySection = React.useMemo(() => {
-    if (!progress) return {};
-
-    const toLessonType = (value: string): LessonType => {
-      return Object.values(LessonType).includes(value as LessonType)
-        ? (value as LessonType)
-        : LessonType.VIDEO;
-    };
-
-    const map: Record<string, Lesson[]> = {};
-    progress.sections.forEach((section) => {
-      // Map progress lessons to Lesson type
-      const lessons: Lesson[] = section.lessons.map(
-        (progressLesson: LessonProgress) => ({
-          id: progressLesson.lessonId,
-          sectionId: section.sectionId,
-          title: progressLesson.lessonName,
-          description: "",
-          type: toLessonType(progressLesson.lessonType),
-          content: "",
-          duration: progressLesson.duration,
-          orderIndex: progressLesson.lessonOrder,
-          isFree: false,
-          attachments: [],
-          parentId: null,
-          path: null,
-          level: 0,
-          childrenCount: 0,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          videoUrl: "",
-        }),
-      );
-      map[section.sectionId] = lessons;
-    });
-    return map;
-  }, [progress]);
-
-  // Get progress map
-  const progressMap = React.useMemo(() => {
-    if (!progress) return {};
-
-    const map: Record<string, boolean> = {};
-    progress.sections.forEach((section) => {
-      section.lessons.forEach((lesson) => {
-        map[lesson.lessonId] = lesson.completed;
-      });
-    });
-    return map;
-  }, [progress]);
-
-  // Format seconds to MM:SS
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
-
-  // Seek video to specific time
-  const seekToTime = (seconds: number) => {
-    if (videoRef.current) {
-      // Set the video time
-      videoRef.current.currentTime = seconds;
-
-      // Play video if paused
-      if (videoRef.current.paused) {
-        videoRef.current.play().catch((err) => {
-          console.error("Failed to play video:", err);
-        });
-      }
-
-      // Scroll video into view if needed
-      videoRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
-    }
-  };
-
+  // ─── Loading / Error states ──────────────────────────────────────────────
   if (isLoading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center min-h-100">
+        <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mb-4"></div>
-            <p className="text-gray-600">Loading course...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-3" />
+            <p className="text-gray-500">Loading course…</p>
           </div>
         </div>
       </DashboardLayout>
     );
   }
-
-  if (error || !course) {
+  if (error || !roadmap) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center min-h-100">
-          <div className="text-center">
-            <div className="text-red-600 mb-4">
-              <svg
-                className="w-16 h-16 mx-auto mb-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <p className="text-lg font-semibold">Failed to load course</p>
-              <p className="text-sm mt-1">{error}</p>
-            </div>
-            <Button onClick={() => router.push("/dashboard")}>
-              Back to Dashboard
-            </Button>
-          </div>
+        <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+          <p className="text-red-500 font-medium">{error ?? "Course not found"}</p>
+          <Button onClick={() => router.push("/dashboard")}>Back to Dashboard</Button>
         </div>
       </DashboardLayout>
     );
   }
 
-  const isLessonCompleted = currentLesson
-    ? progressMap[currentLesson.id]
-    : false;
+  const lessonCompleted = currentLesson ? isCompleted(currentLesson.id) : false;
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Lesson Sidebar */}
-      <div className="w-96 shrink-0 overflow-hidden">
-        <LessonSidebar
-          sections={course.sections || []}
-          lessons={lessonsBySection}
-          currentLessonId={currentLesson?.id}
-          progress={progressMap}
-          onLessonSelect={loadLesson}
-        />
-      </div>
+    <div className="flex h-screen bg-gray-50 overflow-hidden">
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Bar */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => router.push(`/courses/${courseId}`)}
-              >
-                <svg
-                  className="w-4 h-4 mr-2"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M10 19l-7-7m0 0l7-7m-7 7h18"
-                  />
-                </svg>
-                Back to Course
-              </Button>
-              <div>
-                <h1 className="text-lg font-bold text-gray-900">
-                  {course.title}
-                </h1>
-                {progress && (
-                  <p className="text-sm text-gray-600">
-                    {progress.completedLessonsCount} /{" "}
-                    {progress.totalLessonsCount} lessons completed •{" "}
-                    {progress.progressPercent}%
-                  </p>
-                )}
-              </div>
+      {/* ── Sidebar ─────────────────────────────────────────────────────────── */}
+      <div className="w-80 shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-hidden">
+        {/* Course title */}
+        <div className="px-5 py-4 border-b border-gray-100">
+          <button
+            onClick={() => router.push(`/courses/${courseId}`)}
+            className="flex items-center gap-2 text-xs text-gray-400 hover:text-gray-600 mb-2"
+          >
+            ← Back to course
+          </button>
+          <h2 className="font-bold text-gray-900 text-sm line-clamp-2">{roadmap.course.title}</h2>
+          {/* Progress bar */}
+          <div className="mt-2">
+            <div className="flex justify-between text-xs text-gray-400 mb-1">
+              <span>{roadmap.completedCount}/{roadmap.totalCount} completed</span>
+              <span>{roadmap.progressPercent}%</span>
             </div>
-
-            {/* Progress Bar */}
-            {progress && (
-              <div className="w-48">
-                <div className="flex items-center justify-between text-sm mb-1">
-                  <span className="text-gray-600">Progress</span>
-                  <span className="font-semibold text-gray-900">
-                    {progress.progressPercent}%
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-primary-600 h-2 rounded-full transition-all"
-                    style={{ width: `${progress.progressPercent}%` }}
-                  />
-                </div>
-              </div>
-            )}
+            <div className="w-full h-1.5 bg-gray-100 rounded-full">
+              <div className="h-1.5 bg-primary-600 rounded-full transition-all" style={{ width: `${roadmap.progressPercent}%` }} />
+            </div>
           </div>
         </div>
 
-        {/* Video & Content */}
-        <div className="flex-1 overflow-y-auto">
-          <div className=" mx-auto p-6 space-y-6">
-            {/* Video Player */}
-            {currentLesson ? (
-              <>
-                <div className="flex gap-6">
-                  <div
-                    className={`transition-all ${showTranscript ? "w-2/3" : "w-full"}`}
-                  >
+        {/* Lesson list */}
+        <div className="flex-1 overflow-y-auto py-2">
+          {roadmap.lessons.map((rl: RoadmapLesson, idx) => {
+            const active = currentLesson?.id === rl.id;
+            return (
+              <button
+                key={rl.id}
+                onClick={() => !rl.locked && loadLesson(rl.id)}
+                disabled={rl.locked}
+                className={`w-full flex items-center gap-3 px-5 py-3 text-left transition ${
+                  active ? "bg-primary-50 border-r-2 border-primary-600" : "hover:bg-gray-50"
+                } ${rl.locked ? "opacity-40 cursor-not-allowed" : ""}`}
+              >
+                {/* status icon */}
+                <span className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs ${
+                  rl.isCompleted ? "bg-green-500 text-white" :
+                  rl.locked ? "bg-gray-200 text-gray-400" :
+                  active ? "bg-primary-600 text-white" :
+                  "bg-gray-100 text-gray-500"
+                }`}>
+                  {rl.isCompleted ? "✓" : rl.locked ? "🔒" : idx + 1}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm font-medium truncate ${active ? "text-primary-700" : "text-gray-800"}`}>{rl.title}</p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="text-xs text-gray-400 capitalize">{rl.type}</span>
+                    {rl.xpReward > 0 && <span className="text-xs text-yellow-500">+{rl.xpReward}xp</span>}
+                    {rl.isPremium && <span className="text-xs text-yellow-600">⭐</span>}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Main content ─────────────────────────────────────────────────────── */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Top bar */}
+        <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shrink-0">
+          <h1 className="text-base font-semibold text-gray-900 truncate max-w-lg">
+            {currentLesson?.title ?? "Select a lesson"}
+          </h1>
+          {currentLesson && currentLesson.type !== LessonType.QUIZ && (
+            <Button
+              size="sm"
+              variant={lessonCompleted ? "outline" : "primary"}
+              onClick={() => markComplete(currentLesson.id)}
+              disabled={completing || lessonCompleted}
+            >
+              {completing ? "…" : lessonCompleted ? "✓ Completed" : "Mark Complete"}
+            </Button>
+          )}
+        </div>
+
+        {/* Content area */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {!currentLesson ? (
+            <div className="flex flex-col items-center justify-center h-full text-gray-400">
+              <div className="text-6xl mb-4">🎵</div>
+              <p className="text-lg font-medium">Select a lesson to start</p>
+            </div>
+          ) : currentLesson.type === LessonType.QUIZ ? (
+            <QuizPlayer
+              lessonId={currentLesson.id}
+              courseId={courseId}
+              isCompleted={lessonCompleted}
+              onLessonComplete={() => markComplete(currentLesson.id)}
+            />
+          ) : (
+            <div className="space-y-6 max-w-4xl mx-auto">
+              {/* Video */}
+              {currentLesson.type === LessonType.VIDEO && (
+                <div className="flex gap-4">
+                  <div className={showTranscript ? "w-2/3" : "w-full"}>
                     <VideoPlayer
                       videoRef={videoRef}
-                      videoUrl={videoUrl || ""}
+                      videoUrl={videoUrl ?? ""}
                       title={currentLesson.title}
                       showTranscript={showTranscript}
-                      onTranscriptToggle={() =>
-                        setShowTranscript(!showTranscript)
-                      }
-                      onEnded={() => {
-                        if (!isLessonCompleted) {
-                          toggleLessonComplete(currentLesson.id, false);
-                        }
-                      }}
+                      onTranscriptToggle={() => setShowTranscript((p) => !p)}
+                      onEnded={() => { if (!lessonCompleted) markComplete(currentLesson.id); }}
                     />
                   </div>
-
-                  {/* Transcript Panel */}
                   {showTranscript && (
-                    <div className="w-1/3 bg-white rounded-lg border border-gray-200 p-4 max-h-150 overflow-y-auto">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          Transcript
-                        </h3>
-                        <button
-                          onClick={() => setShowTranscript(false)}
-                          className="text-gray-400 hover:text-gray-600 transition-colors"
-                          aria-label="Close transcript"
-                        >
-                          <svg
-                            className="w-5 h-5"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M6 18L18 6M6 6l12 12"
-                            />
-                          </svg>
-                        </button>
+                    <div className="w-1/3 bg-white rounded-xl border border-gray-200 p-4 max-h-[500px] overflow-y-auto">
+                      <div className="flex justify-between mb-3">
+                        <h3 className="font-semibold text-gray-900 text-sm">Transcript</h3>
+                        <button onClick={() => setShowTranscript(false)} className="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
                       </div>
-
-                      <div className="space-y-4">
-                        {isLoadingTranscript ? (
-                          <div className="text-center py-8">
-                            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mb-2"></div>
-                            <p className="text-gray-600">
-                              Loading transcript...
-                            </p>
-                          </div>
-                        ) : transcript &&
-                          transcript.segments &&
-                          transcript.segments.length > 0 ? (
-                          transcript.segments.map((segment, index) => (
-                            <div
-                              key={index}
-                              className="flex gap-3 p-3 rounded hover:bg-gray-50 cursor-pointer transition-colors group"
-                              onClick={() => seekToTime(segment.start)}
-                            >
-                              <span className="text-sm font-medium text-primary-600 shrink-0 group-hover:text-primary-700">
-                                {formatTime(segment.start)}
-                              </span>
-                              <p className="text-sm text-gray-700 group-hover:text-gray-900">
-                                {segment.text}
-                              </p>
-                            </div>
-                          ))
-                        ) : (
-                          <div className="text-center py-8 text-gray-500">
-                            <p>No transcript available for this lesson.</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Lesson Info */}
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
-                  <div className="flex items-start justify-between gap-4 mb-4">
-                    <div className="flex-1">
-                      <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                        {currentLesson.title}
-                      </h2>
-                      {currentLesson.description && (
-                        <p className="text-gray-600">
-                          {currentLesson.description}
-                        </p>
-                      )}
-                    </div>
-                    <Button
-                      variant={isLessonCompleted ? "outline" : "primary"}
-                      onClick={() =>
-                        toggleLessonComplete(
-                          currentLesson.id,
-                          isLessonCompleted,
-                        )
-                      }
-                      disabled={isCompletingLesson}
-                    >
-                      {isCompletingLesson ? (
-                        <span className="flex items-center gap-2">
-                          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                          Processing...
-                        </span>
-                      ) : isLessonCompleted ? (
-                        <span className="flex items-center gap-2">
-                          <svg
-                            className="w-5 h-5"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          Completed
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-2">
-                          Mark as Complete
-                        </span>
-                      )}
-                    </Button>
-                  </div>
-
-                  {/* Lesson Content */}
-                  {currentLesson.content && (
-                    <div className="prose max-w-none mt-6">
-                      <div
-                        dangerouslySetInnerHTML={{
-                          __html: currentLesson.content,
-                        }}
-                      />
-                    </div>
-                  )}
-
-                  {/* Attachments */}
-                  {currentLesson.attachments &&
-                    currentLesson.attachments.length > 0 && (
-                      <div className="mt-6 pt-6 border-t border-gray-200">
-                        <h3 className="font-semibold text-gray-900 mb-3">
-                          Attachments
-                        </h3>
-                        <div className="space-y-2">
-                          {currentLesson.attachments.map(
-                            (attachment, index) => (
-                              <a
-                                key={index}
-                                href={attachment}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 text-primary-600 hover:text-primary-700"
-                              >
-                                <svg
-                                  className="w-5 h-5"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                                  />
-                                </svg>
-                                Download attachment {index + 1}
-                              </a>
-                            ),
-                          )}
+                      {transcript?.segments?.map((seg, i) => (
+                        <div key={i} className="flex gap-2 py-2 hover:bg-gray-50 rounded cursor-pointer"
+                          onClick={() => { if (videoRef.current) { videoRef.current.currentTime = seg.start; videoRef.current.play(); }}}>
+                          <span className="text-xs text-primary-500 shrink-0 font-mono">{formatTime(seg.start)}</span>
+                          <p className="text-xs text-gray-700">{seg.text}</p>
                         </div>
-                      </div>
-                    )}
+                      )) ?? <p className="text-xs text-gray-400 text-center py-6">No transcript available</p>}
+                    </div>
+                  )}
                 </div>
-              </>
-            ) : (
-              <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-                <svg
-                  className="w-16 h-16 mx-auto mb-4 text-gray-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-                  />
-                </svg>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  No lesson selected
-                </h3>
-                <p className="text-gray-600">
-                  Select a lesson from the sidebar to start learning
-                </p>
-              </div>
-            )}
-          </div>
+              )}
+
+              {/* Theory / Article content */}
+              {(currentLesson.type === LessonType.THEORY || currentLesson.type === LessonType.ARTICLE) && (
+                <div className="bg-white rounded-xl border border-gray-200 p-8">
+                  <div className="flex items-center gap-2 mb-6">
+                    <span className="px-2 py-0.5 text-xs font-semibold bg-indigo-100 text-indigo-700 rounded-full uppercase">{currentLesson.type}</span>
+                    {currentLesson.xpReward && <span className="text-sm text-yellow-600">+{currentLesson.xpReward} XP</span>}
+                  </div>
+                  {currentLesson.content ? (
+                    <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: currentLesson.content }} />
+                  ) : (
+                    <p className="text-gray-400 italic">No content available.</p>
+                  )}
+                </div>
+              )}
+
+              {/* Lesson description / attachments */}
+              {currentLesson.description && (
+                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                  <h3 className="font-semibold text-gray-900 mb-2">About this lesson</h3>
+                  <p className="text-gray-600 text-sm">{currentLesson.description}</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
