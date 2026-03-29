@@ -1,6 +1,5 @@
 import { MainLayout } from "@/components/layout";
 import { Button } from "@/components/base";
-import { CourseList } from "@/components/common";
 import Link from "next/link";
 
 export default function Home() {
