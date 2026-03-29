@@ -143,7 +143,7 @@ export default function PianoPage() {
               </li>
               <li className="flex gap-2">
                 <span className="text-primary-500 mt-0.5">•</span>
-                Click "Toàn màn hình" để chơi tập trung
+                Click &ldquo;Toàn màn hình&rdquo; để chơi tập trung
               </li>
             </ul>
           </div>
