@@ -7,6 +7,7 @@ import { Button } from "@/components/base/Button";
 import { Input } from "@/components/base/Input";
 import { Textarea } from "@/components/base/Textarea";
 import { VideoUpload } from "./VideoUpload";
+import { QuizManager } from "./QuizManager";
 import type { Lesson, CreateLessonDto, LessonType } from "@/lib/types/course";
 
 interface LessonModalProps {
@@ -30,13 +31,14 @@ export function LessonModal({
     type: (lesson?.type as LessonType) || "video",
     duration: lesson?.duration || 0,
     isFree: lesson?.isFree || false,
+    content: lesson?.content || "",
     sectionId,
     parentId: parentLesson?.id || lesson?.parentId || undefined,
     orderIndex: lesson?.orderIndex || 0,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showVideoUpload, setShowVideoUpload] = useState(false);
+  const [step, setStep] = useState<"form" | "video" | "quiz">("form");
   const [createdLessonId, setCreatedLessonId] = useState<string | null>(
     lesson?.id || null
   );
@@ -57,6 +59,7 @@ export function LessonModal({
         title: formData.title,
         description: formData.description,
         type: formData.type as LessonType,
+        content: formData.content,
         duration: formData.duration || 0,
         isFree: formData.isFree || false,
         sectionId,
@@ -66,16 +69,24 @@ export function LessonModal({
 
       if (lesson) {
         await lessonApi.update(lesson.id, lessonData);
+        // If editing a quiz lesson, go to quiz manager
+        if (formData.type === "quiz") {
+          setCreatedLessonId(lesson.id);
+          setStep("quiz");
+        } else {
+          onSuccess();
+        }
       } else {
         const newLesson = await lessonApi.create(lessonData);
         setCreatedLessonId(newLesson.id);
-      }
 
-      // Show video upload if lesson type is video
-      if (formData.type === "video") {
-        setShowVideoUpload(true);
-      } else {
-        onSuccess();
+        if (formData.type === "video") {
+          setStep("video");
+        } else if (formData.type === "quiz") {
+          setStep("quiz");
+        } else {
+          onSuccess();
+        }
       }
     } catch (err: unknown) {
       const errorMessage =
@@ -92,7 +103,7 @@ export function LessonModal({
       onClose={onClose}
       title={lesson ? "Edit Lesson" : "Create New Lesson"}
     >
-      {showVideoUpload && createdLessonId ? (
+      {step === "video" && createdLessonId ? (
         <div className="space-y-4">
           <VideoUpload
             lessonId={createdLessonId}
@@ -114,6 +125,18 @@ export function LessonModal({
             </Button>
           </div>
         </div>
+      ) : step === "quiz" && createdLessonId ? (
+        <QuizManager
+          lessonId={createdLessonId}
+          onDone={() => {
+            onSuccess();
+            onClose();
+          }}
+          onSkip={() => {
+            onSuccess();
+            onClose();
+          }}
+        />
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
@@ -135,8 +158,10 @@ export function LessonModal({
             label="Lesson Title"
             required
             value={formData.title || ""}
-            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            placeholder="e.g., Introduction to React Hooks"
+            onChange={(e) =>
+              setFormData({ ...formData, title: e.target.value })
+            }
+            placeholder="e.g., Introduction to Piano Chords"
           />
 
           <Textarea
@@ -157,14 +182,17 @@ export function LessonModal({
               <select
                 value={formData.type || "video"}
                 onChange={(e) =>
-                  setFormData({ ...formData, type: e.target.value as LessonType })
+                  setFormData({
+                    ...formData,
+                    type: e.target.value as LessonType,
+                  })
                 }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="video">Video</option>
-                <option value="article">Article</option>
+                <option value="theory">Theory</option>
                 <option value="quiz">Quiz</option>
-                <option value="coding_exercise">Coding Exercise</option>
+                <option value="article">Article</option>
                 <option value="resource">Resource</option>
               </select>
             </div>
@@ -182,6 +210,19 @@ export function LessonModal({
               placeholder="0"
             />
           </div>
+
+          {/* Content field for theory/article */}
+          {(formData.type === "theory" || formData.type === "article") && (
+            <Textarea
+              label="Content"
+              value={formData.content || ""}
+              onChange={(e) =>
+                setFormData({ ...formData, content: e.target.value })
+              }
+              placeholder="Lesson content (supports HTML)..."
+              rows={6}
+            />
+          )}
 
           <div className="flex items-center">
             <input
@@ -203,7 +244,15 @@ export function LessonModal({
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? "Saving..." : lesson ? "Update Lesson" : "Create Lesson"}
+              {loading
+                ? "Saving..."
+                : lesson
+                ? "Update Lesson"
+                : formData.type === "video"
+                ? "Create & Upload Video"
+                : formData.type === "quiz"
+                ? "Create & Add Quiz"
+                : "Create Lesson"}
             </Button>
           </div>
         </form>

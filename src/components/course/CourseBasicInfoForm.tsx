@@ -2,17 +2,12 @@
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import Image from "next/image";
 import { courseApi } from "@/lib/api/course";
 import { Button } from "@/components/base/Button";
 import { Input } from "@/components/base/Input";
 import { Textarea } from "@/components/base/Textarea";
-import { ThumbnailUpload } from "./ThumbnailUpload";
-import type {
-  CreateCourseDto,
-  Course,
-  CourseLevel,
-  CourseStatus,
-} from "@/lib/types/course";
+import type { CreateCourseDto, Course } from "@/lib/types/course";
 
 interface CourseBasicInfoFormProps {
   onSuccess: (course: Course) => void;
@@ -29,45 +24,63 @@ export function CourseBasicInfoForm({
 }: CourseBasicInfoFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [thumbnailUrl, setThumbnailUrl] = useState<string | undefined>(
-    initialData?.thumbnail,
+  const [uploadingThumb, setUploadingThumb] = useState(false);
+  const [thumbPreview, setThumbPreview] = useState<string | undefined>(
+    initialData?.thumbnail ?? undefined,
   );
 
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
-  } = useForm<CreateCourseDto>({
-    defaultValues: initialData || {
-      level: "beginner" as CourseLevel,
-      status: "draft" as CourseStatus,
-      language: "English",
-      price: 0,
+  } = useForm<CreateCourseDto & { isPremium: boolean }>({
+    defaultValues: {
+      title: initialData?.title ?? "",
+      description: initialData?.description ?? "",
+      thumbnail: initialData?.thumbnail ?? "",
+      isPremium: initialData?.isPremium ?? false,
+      order: initialData?.order ?? 0,
     },
   });
 
-  const onSubmit = async (data: CreateCourseDto) => {
+  const thumbnailValue = watch("thumbnail");
+
+  // Handle file upload for thumbnail
+  const handleThumbFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !courseId) return;
+    try {
+      setUploadingThumb(true);
+      const result = await courseApi.uploadThumbnail(courseId, file);
+      setValue("thumbnail", result.thumbnail);
+      setThumbPreview(result.thumbnail);
+    } catch {
+      setError("Failed to upload thumbnail");
+    } finally {
+      setUploadingThumb(false);
+    }
+  };
+
+  const onSubmit = async (data: CreateCourseDto & { isPremium: boolean }) => {
     try {
       setLoading(true);
       setError(null);
-
-      // Include thumbnail URL in the course data
-      const courseData = {
-        ...data,
-        thumbnail: thumbnailUrl,
+      const payload: CreateCourseDto = {
+        title: data.title,
+        description: data.description,
+        thumbnail: data.thumbnail || undefined,
+        isPremium: data.isPremium,
+        order: Number(data.order) || 0,
       };
-
       const course =
         isEdit && courseId
-          ? await courseApi.update(courseId, courseData)
-          : await courseApi.create(courseData);
+          ? await courseApi.update(courseId, payload)
+          : await courseApi.create(payload);
       onSuccess(course);
     } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : `Failed to ${isEdit ? "update" : "create"} course`;
-      setError(errorMessage);
+      setError(err instanceof Error ? err.message : `Failed to ${isEdit ? "update" : "create"} course`);
     } finally {
       setLoading(false);
     }
@@ -76,16 +89,14 @@ export function CourseBasicInfoForm({
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          Basic Information
+        <h2 className="text-2xl font-bold text-gray-900 mb-1">
+          {isEdit ? "Edit Course" : "New Course"}
         </h2>
-        <p className="text-gray-600">
-          Fill in the basic details of your course
-        </p>
+        <p className="text-gray-500 text-sm">Fill in the basic details of your course</p>
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg">
+        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
           {error}
         </div>
       )}
@@ -95,7 +106,7 @@ export function CourseBasicInfoForm({
         required
         {...register("title", { required: "Title is required" })}
         error={errors.title?.message}
-        placeholder="e.g., Complete Web Development Bootcamp"
+        placeholder="e.g., Piano for Beginners"
       />
 
       <Textarea
@@ -103,112 +114,85 @@ export function CourseBasicInfoForm({
         required
         {...register("description", { required: "Description is required" })}
         error={errors.description?.message}
-        placeholder="Describe what students will learn..."
-        rows={5}
+        placeholder="What will students learn in this course?"
+        rows={4}
       />
 
-      {/* Thumbnail Upload */}
-      <ThumbnailUpload
-        courseId={courseId}
-        currentThumbnail={initialData?.thumbnail}
-        onUploadSuccess={(url) => setThumbnailUrl(url)}
-        disabled={loading}
-      />
+      {/* Thumbnail */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Thumbnail
+        </label>
+        <div className="flex gap-4 items-start">
+          {/* Preview */}
+          {(thumbPreview || thumbnailValue) && (
+            <div className="relative w-32 h-20 rounded-lg overflow-hidden border border-gray-200 shrink-0">
+              <Image
+                src={thumbPreview || thumbnailValue || ""}
+                alt="Thumbnail preview"
+                fill
+                className="object-cover"
+                onError={() => setThumbPreview(undefined)}
+              />
+            </div>
+          )}
+          <div className="flex-1 space-y-2">
+            <Input
+              label=""
+              {...register("thumbnail")}
+              placeholder="https://example.com/image.jpg"
+              onChange={(e) => {
+                setValue("thumbnail", e.target.value);
+                setThumbPreview(e.target.value);
+              }}
+            />
+            {courseId && (
+              <label className="inline-flex items-center gap-2 cursor-pointer text-sm text-blue-600 hover:text-blue-700">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                {uploadingThumb ? "Uploading..." : "Upload image"}
+                <input type="file" accept="image/*" className="hidden" onChange={handleThumbFile} disabled={uploadingThumb} />
+              </label>
+            )}
+          </div>
+        </div>
+      </div>
 
       <div className="grid grid-cols-2 gap-6">
+        {/* isPremium toggle */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Category <span className="text-red-500">*</span>
+          <label className="block text-sm font-medium text-gray-700 mb-3">Access</label>
+          <label className="flex items-center gap-3 cursor-pointer">
+            <div className="relative">
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                {...register("isPremium")}
+              />
+              <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 transition-colors"></div>
+              <div className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5"></div>
+            </div>
+            <span className="text-sm text-gray-700">
+              Premium course <span className="text-gray-400">(requires subscription)</span>
+            </span>
           </label>
-          <input
-            type="text"
-            {...register("category", { required: "Category is required" })}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="e.g., Programming"
-          />
-          {errors.category && (
-            <p className="mt-1 text-sm text-red-500">
-              {errors.category.message}
-            </p>
-          )}
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Level <span className="text-red-500">*</span>
-          </label>
-          <select
-            {...register("level", { required: "Level is required" })}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="beginner">Beginner</option>
-            <option value="intermediate">Intermediate</option>
-            <option value="advanced">Advanced</option>
-            <option value="all_levels">All Levels</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-3 gap-6">
+        {/* order */}
         <Input
-          label="Price"
+          label="Display Order"
           type="number"
-          step="0.01"
-          {...register("price", { valueAsNumber: true })}
-          placeholder="49.99"
-        />
-
-        <Input
-          label="Discount Price"
-          type="number"
-          step="0.01"
-          {...register("discountPrice", { valueAsNumber: true })}
-          placeholder="29.99"
-        />
-
-        <Input
-          label="Language"
-          {...register("language")}
-          placeholder="English"
+          {...register("order", { valueAsNumber: true })}
+          placeholder="0"
         />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Tags
-        </label>
-        <input
-          type="text"
-          {...register("tags")}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          placeholder="React, JavaScript, Web Development (comma separated)"
-        />
-        <p className="mt-1 text-sm text-gray-500">Separate tags with commas</p>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Status
-        </label>
-        <select
-          {...register("status")}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        >
-          <option value="draft">Draft</option>
-          <option value="published">Published</option>
-          <option value="archived">Archived</option>
-        </select>
-      </div>
-
-      <div className="flex justify-end space-x-4 pt-6 border-t">
+      <div className="flex justify-end pt-4 border-t">
         <Button type="submit" disabled={loading}>
           {loading
-            ? isEdit
-              ? "Updating..."
-              : "Creating..."
-            : isEdit
-              ? "Update Course & Continue"
-              : "Create Course & Continue"}
+            ? isEdit ? "Saving..." : "Creating..."
+            : isEdit ? "Save & Continue" : "Create Course & Continue"}
         </Button>
       </div>
     </form>

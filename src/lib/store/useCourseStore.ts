@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { courseApi, type CourseFilters } from "../api";
-import { Course } from "../types";
+import { Course } from "../types/course";
 
 /**
  * Course Store - Quản lý courses state

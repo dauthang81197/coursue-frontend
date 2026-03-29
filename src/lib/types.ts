@@ -1,3 +1,6 @@
+// Re-export Course from canonical source
+export type { Course } from "./types/course";
+
 // Pagination types
 export interface PaginatedResponse<T> {
   data: T[];
@@ -14,23 +17,6 @@ export interface PaginationParams {
   order?: "asc" | "desc";
 }
 
-// Course types
-export interface Course {
-  id: string;
-  title: string;
-  description?: string;
-  instructor: string;
-  thumbnail: string;
-  rating: number;
-  reviewCount: number;
-  price: number;
-  originalPrice?: number;
-  category: string;
-  level: "Beginner" | "Intermediate" | "Advanced" | "All Levels";
-  duration: string;
-  studentsEnrolled: number;
-}
-
 // User types
 export interface User {
   id: string;
@@ -40,7 +26,7 @@ export interface User {
   role: "student" | "instructor" | "admin";
 }
 
-// Lesson/Module types
+// Lesson/Module types (legacy UI shapes)
 export interface Lesson {
   id: string;
   title: string;
@@ -55,7 +41,7 @@ export interface Module {
   lessons: Lesson[];
 }
 
-// Progress types
+// Progress types (legacy)
 export interface Progress {
   courseId: string;
   completedLessons: number;
