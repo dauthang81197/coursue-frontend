@@ -36,7 +36,7 @@ export default function Home() {
       {/* Featured Courses Section */}
       <section className="py-12 bg-gray-50">
         <div className="container-custom">
-          <CourseList title="Continue Watching" showSeeAll={true} limit={6} />
+          {/*<CourseList title="Continue Watching" showSeeAll={true} limit={6} />*/}
         </div>
       </section>
 

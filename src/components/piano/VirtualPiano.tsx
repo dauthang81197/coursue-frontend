@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import * as Tone from "tone";
 import { PianoKey } from "./PianoKey";
+import { MidiPlayer } from "./MidiPlayer";
 import { PianoNote, VirtualPianoProps } from "./types";
 
 // ── Piano key layout: C1 – C6  (36 white + 25 black = 61 keys) ────────
@@ -223,6 +224,17 @@ export const VirtualPiano: React.FC<VirtualPianoProps> = ({ className = "" }) =>
     setCurrentNote((c) => (c === note ? null : c));
   }, []);
 
+  // ── MIDI Player callbacks (called from Tone.Draw, no audio init needed) ──
+  const midiNoteOn = useCallback((note: string) => {
+    setActiveNotes((p) => new Set(p).add(note));
+    setCurrentNote(note);
+  }, []);
+
+  const midiNoteOff = useCallback((note: string) => {
+    setActiveNotes((p) => { const s = new Set(p); s.delete(note); return s; });
+    setCurrentNote((c) => (c === note ? null : c));
+  }, []);
+
   // Keyboard events
   useEffect(() => {
     const onDown = (e: KeyboardEvent) => {
@@ -393,6 +405,16 @@ export const VirtualPiano: React.FC<VirtualPianoProps> = ({ className = "" }) =>
             <span className="text-[10px] text-gray-400 italic">click / touch only</span>
           </div>
         </div>
+      </div>
+
+      {/* ── MIDI Player ── */}
+      <div style={{ width: `${pianoWidth + 24}px` }}>
+        <MidiPlayer
+          synthRef={synthRef}
+          onEnsureAudio={ensureAudio}
+          onNoteOn={midiNoteOn}
+          onNoteOff={midiNoteOff}
+        />
       </div>
     </div>
   );
