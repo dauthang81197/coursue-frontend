@@ -161,6 +161,27 @@ export const Sidebar: React.FC = () => {
         </nav>
       </div>
 
+      {/* Virtual Piano Section */}
+      <div className="mb-8">
+        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+          Practice
+        </h3>
+        <Link
+          href="/piano"
+          className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors group ${
+            pathname === "/piano"
+              ? "bg-primary-50 text-primary-600"
+              : "text-gray-700 hover:bg-primary-50 hover:text-primary-600"
+          }`}
+        >
+          <span className="text-xl leading-none group-hover:scale-110 transition-transform">🎹</span>
+          <span className="font-medium">Virtual Piano</span>
+          <span className="ml-auto text-[10px] bg-primary-100 text-primary-600 px-1.5 py-0.5 rounded-full font-semibold">
+            NEW
+          </span>
+        </Link>
+      </div>
+
       {/* Settings Section */}
       <div>
         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">

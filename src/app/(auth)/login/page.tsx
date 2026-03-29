@@ -7,14 +7,15 @@ import { AuthLayout } from "@/components/layout";
 import { Button, Input } from "@/components/base";
 import { ROUTES } from "@/lib/constants";
 import { useAuthStore } from "@/lib/store";
+import { PianoPanel } from "@/components/piano";
 
 export default function LoginPage() {
   const router = useRouter();
   const { login, isLoading, error, clearError } = useAuthStore();
 
   const [formData, setFormData] = useState({
-    email: "",
-    password: "",
+    email: "user@example.com",
+    password: "password123",
   });
   const [rememberMe, setRememberMe] = useState(false);
 
@@ -29,7 +30,7 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Submitting login form with data:", formData, "Remember me:", rememberMe);
+
     try {
       await login(formData.email, formData.password);
 
@@ -42,6 +43,7 @@ export default function LoginPage() {
   };
 
   return (
+    <>
     <AuthLayout>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Welcome Back</h1>
@@ -166,5 +168,7 @@ export default function LoginPage() {
         </div>
       </div>
     </AuthLayout>
+    <PianoPanel />
+    </>
   );
 }
