@@ -64,6 +64,15 @@ export const Header: React.FC = () => {
 
                     {/* Navigation - Desktop */}
                     <nav className="hidden md:flex items-center gap-4">
+                        {/* Virtual Piano link — always visible */}
+                        <Link
+                            href={ROUTES.PIANO}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-primary-200 text-primary-700 bg-primary-50 hover:bg-primary-100 hover:border-primary-300 transition-colors text-sm font-medium"
+                        >
+                            <span className="text-base leading-none">🎹</span>
+                            <span>Piano</span>
+                        </Link>
+
                         {isAuthenticated ? (
                             <>
                                 <Link
@@ -167,6 +176,13 @@ export const Header: React.FC = () => {
                         </div>
                         {isAuthenticated ? (
                             <div className="space-y-2">
+                                <Link
+                                    href={ROUTES.PIANO}
+                                    className="flex items-center gap-2 py-2 text-primary-600 font-medium"
+                                    onClick={() => setIsMenuOpen(false)}
+                                >
+                                    <span>🎹</span> Virtual Piano
+                                </Link>
                                 <Link
                                     href={ROUTES.DASHBOARD}
                                     className="block py-2 text-gray-700 hover:text-primary-600"

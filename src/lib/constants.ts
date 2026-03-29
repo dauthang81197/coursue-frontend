@@ -13,6 +13,7 @@ export const ROUTES = {
     COURSE_DETAIL: (id: string) => `/courses/${id}`,
     PROFILE: "/profile",
     SETTINGS: "/settings",
+    PIANO: "/piano",
 } as const;
 
 export const CATEGORIES = [
