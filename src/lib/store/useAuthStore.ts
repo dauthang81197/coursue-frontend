@@ -22,7 +22,11 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  _hasHydrated: boolean; // Track hydration status
+  _hasHydrated: boolean;
+  /** Set to true after login/register when backend says user must pick a plan */
+  needsPlanSelection: boolean;
+  subscriptionStatus: "trialing" | "expired" | "active" | null;
+  trialDaysLeft: number | null;
 
   // Actions
   login: (email: string, password: string) => Promise<void>;
@@ -32,7 +36,8 @@ interface AuthState {
   setTokens: (accessToken: string, refreshToken: string) => void;
   clearError: () => void;
   checkAuth: () => Promise<void>;
-  setHasHydrated: (state: boolean) => void; // Set hydration status
+  setHasHydrated: (state: boolean) => void;
+  clearNeedsPlanSelection: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -46,6 +51,9 @@ export const useAuthStore = create<AuthState>()(
       isLoading: false,
       error: null,
       _hasHydrated: false,
+      needsPlanSelection: false,
+      subscriptionStatus: null,
+      trialDaysLeft: null,
 
       // Login
       login: async (email: string, password: string) => {
@@ -57,18 +65,22 @@ export const useAuthStore = create<AuthState>()(
             password,
           });
 
-          // Save tokens to localStorage
           if (typeof window !== "undefined") {
             localStorage.setItem("access_token", response.accessToken);
-            localStorage.setItem("refresh_token", response.refreshToken);
+            if (response.refreshToken) {
+              localStorage.setItem("refresh_token", response.refreshToken);
+            }
           }
 
           set({
-            user: response.user,
+            user: response.user ?? null,
             accessToken: response.accessToken,
-            refreshToken: response.refreshToken,
+            refreshToken: response.refreshToken ?? null,
             isAuthenticated: true,
             isLoading: false,
+            needsPlanSelection: response.needsPlanSelection ?? false,
+            subscriptionStatus: response.subscriptionStatus ?? null,
+            trialDaysLeft: response.trialDaysLeft ?? null,
           });
         } catch (error) {
           const message =
@@ -92,18 +104,22 @@ export const useAuthStore = create<AuthState>()(
             password,
           });
 
-          // Save tokens to localStorage
           if (typeof window !== "undefined") {
             localStorage.setItem("access_token", response.accessToken);
-            localStorage.setItem("refresh_token", response.refreshToken);
+            if (response.refreshToken) {
+              localStorage.setItem("refresh_token", response.refreshToken);
+            }
           }
 
           set({
-            user: response.user,
+            user: response.user ?? null,
             accessToken: response.accessToken,
-            refreshToken: response.refreshToken,
+            refreshToken: response.refreshToken ?? null,
             isAuthenticated: true,
             isLoading: false,
+            needsPlanSelection: response.needsPlanSelection ?? true,
+            subscriptionStatus: response.subscriptionStatus ?? null,
+            trialDaysLeft: response.trialDaysLeft ?? null,
           });
         } catch (error) {
           const message =
@@ -123,7 +139,6 @@ export const useAuthStore = create<AuthState>()(
         } catch (error) {
           console.error("Logout error:", error);
         } finally {
-          // Clear tokens from localStorage
           if (typeof window !== "undefined") {
             localStorage.removeItem("access_token");
             localStorage.removeItem("refresh_token");
@@ -134,6 +149,9 @@ export const useAuthStore = create<AuthState>()(
             accessToken: null,
             refreshToken: null,
             isAuthenticated: false,
+            needsPlanSelection: false,
+            subscriptionStatus: null,
+            trialDaysLeft: null,
           });
         }
       },
@@ -162,16 +180,19 @@ export const useAuthStore = create<AuthState>()(
         set({ _hasHydrated: state });
       },
 
+      // Clear the plan selection flag after the user has selected a plan
+      clearNeedsPlanSelection: () => {
+        set({ needsPlanSelection: false });
+      },
+
       // Check authentication
       checkAuth: async () => {
         try {
           set({ isLoading: true });
 
-          // Đọc token từ localStorage hoặc từ state
           let token = useAuthStore.getState().accessToken;
 
           if (!token && typeof window !== "undefined") {
-            // Fallback: đọc trực tiếp từ localStorage nếu state chưa sync
             token = localStorage.getItem("access_token");
             console.log(
               "🔄 Syncing token from localStorage:",
@@ -184,19 +205,15 @@ export const useAuthStore = create<AuthState>()(
             return;
           }
 
-          // Nếu có token, set authenticated = true trước
-          // Để tránh bị redirect khi F5
           set({
             isAuthenticated: true,
-            accessToken: token, // Sync token vào state
+            accessToken: token,
           });
 
-          // Thử gọi API để verify token và lấy user data mới nhất
           try {
             const user = await authApi.getCurrentUser();
             set({ user, isAuthenticated: true, isLoading: false });
           } catch (apiError) {
-            // Nếu API lỗi nhưng không phải 401, vẫn giữ authenticated
             const isUnauthorized =
               apiError instanceof Error &&
               "response" in apiError &&
@@ -204,14 +221,12 @@ export const useAuthStore = create<AuthState>()(
                 ?.status === 401;
 
             if (isUnauthorized) {
-              // Token invalid - logout
               set({ isAuthenticated: false, user: null, isLoading: false });
               if (typeof window !== "undefined") {
                 localStorage.removeItem("access_token");
                 localStorage.removeItem("refresh_token");
               }
             } else {
-              // Lỗi khác (network, 404, 500) - giữ authenticated
               console.warn("checkAuth API error (non-401):", apiError);
               set({ isLoading: false });
             }
@@ -223,15 +238,17 @@ export const useAuthStore = create<AuthState>()(
       },
     }),
     {
-      name: "auth-storage", // localStorage key
+      name: "auth-storage",
       partialize: (state) => ({
         user: state.user,
         accessToken: state.accessToken,
         refreshToken: state.refreshToken,
         isAuthenticated: state.isAuthenticated,
+        needsPlanSelection: state.needsPlanSelection,
+        subscriptionStatus: state.subscriptionStatus,
+        trialDaysLeft: state.trialDaysLeft,
       }),
       onRehydrateStorage: () => (state) => {
-        // Được gọi sau khi restore từ localStorage xong
         state?.setHasHydrated(true);
       },
     },
