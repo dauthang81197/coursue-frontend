@@ -17,8 +17,14 @@ export interface RegisterRequest {
 
 export interface AuthResponse {
     accessToken: string;
-    refreshToken: string;
-    user: {
+    refreshToken?: string;
+    /** true when the user has not yet chosen a subscription plan */
+    needsPlanSelection?: boolean;
+    /** current subscription status returned at login */
+    subscriptionStatus?: "trialing" | "expired" | "active" | null;
+    /** days remaining in the trial */
+    trialDaysLeft?: number;
+    user?: {
         id: string;
         name: string;
         email: string;

@@ -41,6 +41,22 @@ apiClient.interceptors.request.use(
     },
 );
 
+// Handle 403 subscription errors globally
+apiClient.interceptors.response.use(
+    (response) => response,
+    (error: AxiosError) => {
+        if (error.response?.status === 403 && typeof window !== "undefined") {
+            const code = (error.response.data as Record<string, unknown>)?.code as string | undefined;
+            if (code === "TRIAL_EXPIRED" || code === "NO_SUBSCRIPTION") {
+                window.dispatchEvent(
+                    new CustomEvent("subscription-error", { detail: { code } }),
+                );
+            }
+        }
+        return Promise.reject(error);
+    },
+);
+
 // Response Interceptor - Xử lý errors và refresh token
 apiClient.interceptors.response.use(
     (response) => {
