@@ -1,6 +1,8 @@
 import apiClient from "./client";
 import type {
   Lesson,
+  LessonCompleteResponse,
+  LessonStartResponse,
   CreateLessonDto,
   UpdateLessonDto,
   VideoUploadResponse,
@@ -15,20 +17,23 @@ export const lessonApi = {
     return response.data;
   },
 
-  // Mark lesson as completed (new endpoint requires courseId)
+  // Mark lesson as in_progress
+  startLesson: async (courseId: string, lessonId: string): Promise<LessonStartResponse> => {
+    const response = await apiClient.post<LessonStartResponse>(
+      `/learning/courses/${courseId}/lessons/${lessonId}/start`,
+    );
+    return response.data;
+  },
+
+  // Mark lesson as completed and receive XP
   markComplete: async (
     courseId: string,
     lessonId: string,
-    watchedDuration?: number,
-  ): Promise<void> => {
-    await apiClient.post(`/courses/${courseId}/lessons/${lessonId}/complete`, {
-      watchedDuration,
-    });
-  },
-
-  // Mark lesson as uncompleted
-  markUncomplete: async (courseId: string, lessonId: string): Promise<void> => {
-    await apiClient.delete(`/courses/${courseId}/lessons/${lessonId}/complete`);
+  ): Promise<LessonCompleteResponse> => {
+    const response = await apiClient.post<LessonCompleteResponse>(
+      `/learning/courses/${courseId}/lessons/${lessonId}/complete`,
+    );
+    return response.data;
   },
 
   // Get lessons for a section

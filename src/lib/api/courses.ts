@@ -1,5 +1,5 @@
 import apiClient from "./client";
-import { Course, CourseProgress, RoadmapResponse } from "../types/course";
+import { Course, CourseProgress, EnrollmentResponse, NextLessonResponse, RoadmapResponse } from "../types/course";
 
 export interface CoursesResponse {
   data: Course[];
@@ -29,7 +29,7 @@ export const courseApi = {
   },
 
   getCourseRoadmap: async (id: string): Promise<RoadmapResponse> => {
-    const response = await apiClient.get<RoadmapResponse>(`/courses/${id}/roadmap`);
+    const response = await apiClient.get<RoadmapResponse>(`/learning/courses/${id}/lessons`);
     return response.data;
   },
 
@@ -38,8 +38,14 @@ export const courseApi = {
     return response.data;
   },
 
-  enrollCourse: async (courseId: string): Promise<void> => {
-    await apiClient.post(`/courses/${courseId}/enroll`);
+  enrollCourse: async (courseId: string): Promise<EnrollmentResponse> => {
+    const response = await apiClient.post<EnrollmentResponse>(`/learning/courses/${courseId}/start`);
+    return response.data;
+  },
+
+  getNextLesson: async (courseId: string): Promise<NextLessonResponse> => {
+    const response = await apiClient.get<NextLessonResponse>(`/learning/courses/${courseId}/next-lesson`);
+    return response.data;
   },
 
   getCourseProgress: async (courseId: string): Promise<CourseProgress> => {
