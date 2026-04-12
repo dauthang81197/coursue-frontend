@@ -26,7 +26,7 @@ interface CourseState {
   setCurrentCourse: (course: Course | null) => void;
 }
 
-export const useCourseStore = create<CourseState>((set, get) => ({
+export const useCourseStore = create<CourseState>((set) => ({
   // Initial State
   courses: [],
   enrolledCourses: [],
@@ -109,9 +109,6 @@ export const useCourseStore = create<CourseState>((set, get) => ({
       set({ isLoading: true, error: null });
 
       await courseApi.enrollCourse(courseId);
-
-      // Refresh enrolled courses
-      await get().fetchEnrolledCourses();
 
       set({ isLoading: false });
     } catch (error) {

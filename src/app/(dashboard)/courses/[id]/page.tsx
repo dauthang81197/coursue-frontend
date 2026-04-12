@@ -23,28 +23,23 @@ export default function CourseDetailPage() {
   const courseId = params.id as string;
 
   const { user } = useAuthStore();
-  const {
-    currentCourse,
-    enrolledCourses,
-    isLoading,
-    error,
-    fetchCourseById,
-    fetchEnrolledCourses,
-    enrollCourse,
-  } = useCourseStore();
+  const { currentCourse, isLoading, error, fetchCourseById, enrollCourse } = useCourseStore();
 
   const [roadmap, setRoadmap] = useState<RoadmapResponse | null>(null);
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [enrollOk, setEnrollOk] = useState(false);
 
-  const isEnrolled = enrolledCourses.some((c) => c.id === courseId);
+  const isEnrolled = roadmap?.enrolledAt != null;
+
+  const loadRoadmap = () =>
+    courseApi.getCourseRoadmap(courseId).then(setRoadmap).catch(() => null);
 
   useEffect(() => {
     if (!courseId) return;
     fetchCourseById(courseId);
-    if (user) fetchEnrolledCourses();
-    courseApi.getCourseRoadmap(courseId).then(setRoadmap).catch(() => null);
-  }, [courseId, fetchCourseById, fetchEnrolledCourses, user]);
+    loadRoadmap();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courseId]);
 
   const handleEnroll = async () => {
     if (!user) {
@@ -54,6 +49,7 @@ export default function CourseDetailPage() {
     try {
       setIsEnrolling(true);
       await enrollCourse(courseId);
+      await loadRoadmap();
       setEnrollOk(true);
       setTimeout(() => setEnrollOk(false), 3000);
     } catch {

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useRef, useCallback } from "react";
+import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { DashboardLayout } from "@/components/layout";
 import { VideoPlayer } from "@/components/course/VideoPlayer";
@@ -8,7 +9,8 @@ import { QuizPlayer } from "@/components/course/QuizPlayer";
 import { Button } from "@/components/base";
 import { courseApi } from "@/lib/api/courses";
 import { lessonApi } from "@/lib/api/lesson";
-import { Lesson, LessonType, RoadmapLesson, RoadmapResponse, TranscriptData } from "@/lib/types/course";
+import { mediaApi } from "@/lib/api/media";
+import { Lesson, LessonCompleteResponse, LessonType, RoadmapLesson, RoadmapResponse, TranscriptData } from "@/lib/types/course";
 
 export default function LearnPage() {
   const params   = useParams();
@@ -24,6 +26,17 @@ export default function LearnPage() {
   const [isLoading,      setIsLoading]      = useState(true);
   const [completing,     setCompleting]     = useState(false);
   const [error,          setError]          = useState<string | null>(null);
+  const [xpResult,       setXpResult]       = useState<LessonCompleteResponse | null>(null);
+  const [mediaUrls,      setMediaUrls]      = useState<Record<string, string>>({});
+  const blobUrlsRef = useRef<string[]>([]);
+
+  // Revoke all stored blob URLs (called before loading a new lesson and on unmount)
+  const revokeBlobUrls = () => {
+    blobUrlsRef.current.forEach((u) => URL.revokeObjectURL(u));
+    blobUrlsRef.current = [];
+  };
+
+  useEffect(() => () => revokeBlobUrls(), []);
 
   // ── Load roadmap ────────────────────────────────────────────────────────────
   const loadRoadmap = useCallback(async () => {
@@ -34,10 +47,34 @@ export default function LearnPage() {
 
   // ── Load a single lesson ────────────────────────────────────────────────────
   const loadLesson = useCallback(async (lessonId: string) => {
-    const lesson = await lessonApi.getById(lessonId);
+    revokeBlobUrls();
+
+    const [lesson] = await Promise.all([
+      lessonApi.getById(lessonId),
+      lessonApi.startLesson(courseId, lessonId).catch(() => null),
+    ]);
     setCurrentLesson(lesson);
     setTranscript(null);
     setShowTranscript(false);
+
+    // Fetch authenticated blob URLs for every content block that has a mediaId
+    const newMediaUrls: Record<string, string> = {};
+    if (lesson.contents?.length) {
+      await Promise.all(
+        lesson.contents
+          .filter((c) => c.mediaId)
+          .map(async (c) => {
+            try {
+              const blobUrl = await mediaApi.getStreamUrl(c.mediaId!);
+              blobUrlsRef.current.push(blobUrl);
+              newMediaUrls[c.mediaId!] = blobUrl;
+            } catch { /* skip on error */ }
+          }),
+      );
+    }
+    setMediaUrls(newMediaUrls);
+
+    // Set lesson-level video URL for non-contents lessons (videoUrl / presigned videoKey)
     if (lesson.videoUrl) {
       setVideoUrl(lesson.videoUrl);
     } else if (lesson.videoKey) {
@@ -46,16 +83,22 @@ export default function LearnPage() {
     } else {
       setVideoUrl(null);
     }
-  }, []);
+  }, [courseId]);
 
-  // ── Initial load ────────────────────────────────────────────────────────────
+  // ── Initial load: enroll if needed, then open the next unfinished lesson ────
   useEffect(() => {
     if (!courseId) return;
     setIsLoading(true);
     loadRoadmap()
       .then(async (data) => {
-        const first = data.lessons?.[0];
-        if (first) await loadLesson(first.id);
+        // Try to get the next unfinished lesson; fall back to the first lesson
+        let targetId: string | undefined;
+        try {
+          const next = await courseApi.getNextLesson(courseId);
+          targetId = next.lesson?.id;
+        } catch { /* ignore */ }
+        if (!targetId) targetId = data.lessons?.[0]?.id;
+        if (targetId) await loadLesson(targetId);
       })
       .catch((e) => setError(e instanceof Error ? e.message : "Failed to load"))
       .finally(() => setIsLoading(false));
@@ -73,9 +116,12 @@ export default function LearnPage() {
   const markComplete = async (lessonId: string) => {
     try {
       setCompleting(true);
-      await lessonApi.markComplete(courseId, lessonId,
-        videoRef.current ? Math.floor(videoRef.current.currentTime) : undefined);
+      const result = await lessonApi.markComplete(courseId, lessonId);
       await loadRoadmap();
+      if (!result.alreadyCompleted) {
+        setXpResult(result);
+        setTimeout(() => setXpResult(null), 4000);
+      }
     } catch { /* non-fatal */ }
     finally { setCompleting(false); }
   };
@@ -115,6 +161,24 @@ export default function LearnPage() {
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
 
+      {/* ── XP / Level-up toast ─────────────────────────────────────────────── */}
+      {xpResult && (
+        <div className="fixed top-4 right-4 z-50 bg-white border border-gray-200 rounded-2xl shadow-xl px-5 py-4 flex items-center gap-4 animate-in fade-in slide-in-from-top-2">
+          <div className="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center text-2xl shrink-0">
+            {xpResult.leveledUp ? "🎉" : "⭐"}
+          </div>
+          <div>
+            <p className="font-semibold text-gray-900 text-sm">{xpResult.message}</p>
+            <p className="text-xs text-yellow-600 font-medium mt-0.5">
+              +{xpResult.xpGained} XP · Level {xpResult.currentLevel} · {xpResult.currentXp} XP total
+            </p>
+            {xpResult.streak != null && xpResult.streak > 1 && (
+              <p className="text-xs text-orange-500 mt-0.5">🔥 {xpResult.streak}-day streak</p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ── Sidebar ─────────────────────────────────────────────────────────── */}
       <div className="w-80 shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-hidden">
         {/* Course title */}
@@ -153,12 +217,13 @@ export default function LearnPage() {
               >
                 {/* status icon */}
                 <span className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs ${
-                  rl.isCompleted ? "bg-green-500 text-white" :
+                  rl.status === "completed" ? "bg-green-500 text-white" :
+                  rl.status === "in_progress" ? "bg-blue-400 text-white" :
                   rl.locked ? "bg-gray-200 text-gray-400" :
                   active ? "bg-primary-600 text-white" :
                   "bg-gray-100 text-gray-500"
                 }`}>
-                  {rl.isCompleted ? "✓" : rl.locked ? "🔒" : idx + 1}
+                  {rl.status === "completed" ? "✓" : rl.locked ? "🔒" : idx + 1}
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className={`text-sm font-medium truncate ${active ? "text-primary-700" : "text-gray-800"}`}>{rl.title}</p>
@@ -209,50 +274,138 @@ export default function LearnPage() {
             />
           ) : (
             <div className="space-y-6 max-w-4xl mx-auto">
-              {/* Video */}
-              {currentLesson.type === LessonType.VIDEO && (
-                <div className="flex gap-4">
-                  <div className={showTranscript ? "w-2/3" : "w-full"}>
-                    <VideoPlayer
-                      videoRef={videoRef}
-                      videoUrl={videoUrl ?? ""}
-                      title={currentLesson.title}
-                      showTranscript={showTranscript}
-                      onTranscriptToggle={() => setShowTranscript((p) => !p)}
-                      onEnded={() => { if (!lessonCompleted) markComplete(currentLesson.id); }}
-                    />
-                  </div>
-                  {showTranscript && (
-                    <div className="w-1/3 bg-white rounded-xl border border-gray-200 p-4 max-h-[500px] overflow-y-auto">
-                      <div className="flex justify-between mb-3">
-                        <h3 className="font-semibold text-gray-900 text-sm">Transcript</h3>
-                        <button onClick={() => setShowTranscript(false)} className="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
+              {/* Content blocks (contents array) — fallback to legacy single-field */}
+              {(currentLesson.contents?.length ?? 0) > 0 ? (
+                (() => {
+                  const firstVideoId = [...(currentLesson.contents ?? [])]
+                    .filter((c) => c.type === "video")
+                    .sort((a, b) => a.order - b.order)[0]?.id;
+                  return [...(currentLesson.contents ?? [])]
+                    .sort((a, b) => a.order - b.order)
+                    .map((block) => {
+                      if (block.type === "text") {
+                        return (
+                          <div key={block.id} className="bg-white rounded-xl border border-gray-200 p-8">
+                            {block.textData ? (
+                              <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: block.textData }} />
+                            ) : (
+                              <p className="text-gray-400 italic">No content available.</p>
+                            )}
+                          </div>
+                        );
+                      }
+                      if (block.type === "video") {
+                        const isMain = block.id === firstVideoId;
+                        const url = block.media?.url ?? (block.mediaId ? mediaUrls[block.mediaId] : null) ?? (isMain ? videoUrl : null) ?? "";
+                        return (
+                          <div key={block.id}>
+                            <div className={isMain && showTranscript ? "flex gap-4" : ""}>
+                              <div className={isMain && showTranscript ? "w-2/3" : "w-full"}>
+                                <VideoPlayer
+                                  videoRef={isMain ? videoRef : undefined}
+                                  videoUrl={url}
+                                  title={currentLesson.title}
+                                  showTranscript={isMain ? showTranscript : undefined}
+                                  onTranscriptToggle={isMain ? () => setShowTranscript((p) => !p) : undefined}
+                                  onEnded={() => { if (!lessonCompleted) markComplete(currentLesson.id); }}
+                                />
+                              </div>
+                              {isMain && showTranscript && (
+                                <div className="w-1/3 bg-white rounded-xl border border-gray-200 p-4 max-h-[500px] overflow-y-auto">
+                                  <div className="flex justify-between mb-3">
+                                    <h3 className="font-semibold text-gray-900 text-sm">Transcript</h3>
+                                    <button onClick={() => setShowTranscript(false)} className="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
+                                  </div>
+                                  {transcript?.segments?.map((seg, i) => (
+                                    <div key={i} className="flex gap-2 py-2 hover:bg-gray-50 rounded cursor-pointer"
+                                      onClick={() => { if (videoRef.current) { videoRef.current.currentTime = seg.start; videoRef.current.play(); }}}>
+                                      <span className="text-xs text-primary-500 shrink-0 font-mono">{formatTime(seg.start)}</span>
+                                      <p className="text-xs text-gray-700">{seg.text}</p>
+                                    </div>
+                                  )) ?? <p className="text-xs text-gray-400 text-center py-6">No transcript available</p>}
+                                </div>
+                              )}
+                            </div>
+                            {block.caption && (
+                              <p className="text-sm text-gray-500 text-center mt-2 italic">{block.caption}</p>
+                            )}
+                          </div>
+                        );
+                      }
+                      if (block.type === "image") {
+                        const src = block.media?.url ?? (block.mediaId ? mediaUrls[block.mediaId] : null);
+                        return (
+                          <div key={block.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                            {src ? (
+                              <Image
+                                src={src}
+                                alt={block.altText ?? ""}
+                                width={0}
+                                height={0}
+                                sizes="100vw"
+                                className="w-full h-auto max-h-[500px] object-contain"
+                                unoptimized
+                              />
+                            ) : (
+                              <div className="h-40 flex items-center justify-center bg-gray-50 text-gray-400 text-sm">
+                                Image not available
+                              </div>
+                            )}
+                            {block.caption && (
+                              <p className="text-sm text-gray-500 text-center py-2 px-4">{block.caption}</p>
+                            )}
+                          </div>
+                        );
+                      }
+                      return null;
+                    });
+                })()
+              ) : (
+                /* Fallback: legacy rendering when contents array is absent */
+                <>
+                  {currentLesson.type === LessonType.VIDEO && (
+                    <div className="flex gap-4">
+                      <div className={showTranscript ? "w-2/3" : "w-full"}>
+                        <VideoPlayer
+                          videoRef={videoRef}
+                          videoUrl={videoUrl ?? ""}
+                          title={currentLesson.title}
+                          showTranscript={showTranscript}
+                          onTranscriptToggle={() => setShowTranscript((p) => !p)}
+                          onEnded={() => { if (!lessonCompleted) markComplete(currentLesson.id); }}
+                        />
                       </div>
-                      {transcript?.segments?.map((seg, i) => (
-                        <div key={i} className="flex gap-2 py-2 hover:bg-gray-50 rounded cursor-pointer"
-                          onClick={() => { if (videoRef.current) { videoRef.current.currentTime = seg.start; videoRef.current.play(); }}}>
-                          <span className="text-xs text-primary-500 shrink-0 font-mono">{formatTime(seg.start)}</span>
-                          <p className="text-xs text-gray-700">{seg.text}</p>
+                      {showTranscript && (
+                        <div className="w-1/3 bg-white rounded-xl border border-gray-200 p-4 max-h-[500px] overflow-y-auto">
+                          <div className="flex justify-between mb-3">
+                            <h3 className="font-semibold text-gray-900 text-sm">Transcript</h3>
+                            <button onClick={() => setShowTranscript(false)} className="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
+                          </div>
+                          {transcript?.segments?.map((seg, i) => (
+                            <div key={i} className="flex gap-2 py-2 hover:bg-gray-50 rounded cursor-pointer"
+                              onClick={() => { if (videoRef.current) { videoRef.current.currentTime = seg.start; videoRef.current.play(); }}}>
+                              <span className="text-xs text-primary-500 shrink-0 font-mono">{formatTime(seg.start)}</span>
+                              <p className="text-xs text-gray-700">{seg.text}</p>
+                            </div>
+                          )) ?? <p className="text-xs text-gray-400 text-center py-6">No transcript available</p>}
                         </div>
-                      )) ?? <p className="text-xs text-gray-400 text-center py-6">No transcript available</p>}
+                      )}
                     </div>
                   )}
-                </div>
-              )}
-
-              {/* Theory / Article content */}
-              {(currentLesson.type === LessonType.THEORY || currentLesson.type === LessonType.ARTICLE) && (
-                <div className="bg-white rounded-xl border border-gray-200 p-8">
-                  <div className="flex items-center gap-2 mb-6">
-                    <span className="px-2 py-0.5 text-xs font-semibold bg-indigo-100 text-indigo-700 rounded-full uppercase">{currentLesson.type}</span>
-                    {currentLesson.xpReward && <span className="text-sm text-yellow-600">+{currentLesson.xpReward} XP</span>}
-                  </div>
-                  {currentLesson.content ? (
-                    <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: currentLesson.content }} />
-                  ) : (
-                    <p className="text-gray-400 italic">No content available.</p>
+                  {(currentLesson.type === LessonType.THEORY || currentLesson.type === LessonType.ARTICLE) && (
+                    <div className="bg-white rounded-xl border border-gray-200 p-8">
+                      <div className="flex items-center gap-2 mb-6">
+                        <span className="px-2 py-0.5 text-xs font-semibold bg-indigo-100 text-indigo-700 rounded-full uppercase">{currentLesson.type}</span>
+                        {currentLesson.xpReward && <span className="text-sm text-yellow-600">+{currentLesson.xpReward} XP</span>}
+                      </div>
+                      {currentLesson.content ? (
+                        <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: currentLesson.content }} />
+                      ) : (
+                        <p className="text-gray-400 italic">No content available.</p>
+                      )}
+                    </div>
                   )}
-                </div>
+                </>
               )}
 
               {/* Lesson description / attachments */}

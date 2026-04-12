@@ -59,6 +59,30 @@ export interface UpdateSectionDto {
   orderIndex?: number;
 }
 
+// ─── Lesson content blocks ────────────────────────────────────────────────────
+export interface LessonMedia {
+  id: string;
+  url: string;
+  type?: string;
+  fileName?: string;
+  mimeType?: string;
+}
+
+export interface LessonContent {
+  id: string;
+  lessonId: string;
+  type: "text" | "video" | "image";
+  order: number;
+  textData: string | null;
+  mediaId: string | null;
+  media: LessonMedia | null;
+  duration: number | null;
+  caption: string | null;
+  altText: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ─── Lesson ───────────────────────────────────────────────────────────────────
 export enum LessonType {
   VIDEO    = "video",
@@ -118,8 +142,9 @@ export interface RoadmapLesson {
   xpReward: number;
   isPremium: boolean;
   locked: boolean;
+  status: "in_progress" | "completed" | null;
   isCompleted: boolean;
-  content: string | null;
+  completedAt: string | null;
 }
 
 export interface RoadmapResponse {
@@ -130,21 +155,66 @@ export interface RoadmapResponse {
     thumbnail: string | null;
     isPremium: boolean;
     order: number;
+    createdAt?: string;
+    updatedAt?: string;
   };
   lessons: RoadmapLesson[];
   completedCount: number;
   totalCount: number;
   progressPercent: number;
+  enrolledAt: string | null;
+  courseCompletedAt: string | null;
 }
 
 // legacy alias
 export type RoadmapSection = RoadmapResponse;
+
+// ─── Learning API response types ──────────────────────────────────────────────
+export interface EnrollmentResponse {
+  message: string;
+  enrollment: {
+    id: string;
+    courseId: string;
+    startedAt: string;
+    completedAt: string | null;
+  };
+}
+
+export interface LessonStartResponse {
+  lessonId: string;
+  status: "in_progress" | "completed";
+  message: string;
+}
+
+export interface LessonCompleteResponse {
+  alreadyCompleted: boolean;
+  xpGained: number;
+  leveledUp: boolean;
+  currentXp: number;
+  currentLevel: number;
+  streak?: number;
+  badges?: string[];
+  message: string;
+}
+
+export interface NextLessonResponse {
+  lesson: {
+    id: string;
+    title: string;
+    type: string;
+    order: number;
+    xpReward: number;
+    isPremium: boolean;
+  } | null;
+  message?: string;
+}
 
 export interface Lesson {
   id: string;
   title: string;
   description?: string;
   type: LessonType;
+  contents?: LessonContent[];
   content?: string | null;
   xpReward?: number;
   isPremium?: boolean;

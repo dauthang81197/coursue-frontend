@@ -10,7 +10,7 @@ import axios, {
  */
 
 // Base URL từ environment variable hoặc fallback
-const API_BASE_URL =
+export const API_BASE_URL =
     process.env.NEXT_PUBLIC_API_URL || "http://144.91.120.200:8000/api/v1";
 
 // Tạo Axios instance
